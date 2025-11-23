@@ -1,6 +1,14 @@
 # Created by https://www.toptal.com/developers/gitignore/api/terraform,visualstudiocode,java,node,git,gradle
 # Edit at https://www.toptal.com/developers/gitignore?templates=terraform,visualstudiocode,java,node,git,gradle
 
+# Ignore every file in special "keys" folder except README.md file
+**/keys/*
+!**/keys/README.md
+
+# Ignore special generated folders
+**/lib/generated/*
+**/lib/machineconfigs/*
+
 ### Git ###
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false
@@ -188,6 +196,10 @@ dist
 # .tfstate files
 *.tfstate
 *.tfstate.*
+*.tfplan
+*.tfplan.*
+*.terraform.lock.hcl
+*.terraform.lock.hcl.*
 
 # Crash log files
 crash.log
