@@ -1,6 +1,6 @@
 # Keys Directory
 
-This directory contains SSH keys and other secrets used by the infrastructure.
+This directory contains SSH keys symlinks and other secrets used by the infrastructure.
 
 ## Important
 - Never commit actual keys to version control
