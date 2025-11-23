@@ -3,85 +3,86 @@
 # Bastion Module Variables
 #
 # Variables:
-#   - project_name:             Project name
-#   - region:                   Linode region
-#   - admin_access_sshkey:      Admin's SSH public key
-#   - bastion_node_type_id:     Compute instance type for bastion host
-#   - bastion_node_img:         Linux image label for bastion host
-#   - dmz_subnet_id:            ID for DMZ Subnet
-#   - dmz_fw_id:                Firewall ID to attach to DMZ subnet nodes
+#   - infra:                    Infrastructure name
+#   - region:                   Linode cluster region
+#   - ssh_key:                  SSH public key to access instances
+#   - node_type:                Linode instance type for bastion host
+#   - node_img:                 Linode instance image for bastion host
+#   - subnet_id:                Subnet ID for bastion host
+#   - firewall_id:              Firewall ID to attach to bastion host
 ##################################################################################
 
-## Project name
-variable "project_name" {
-  description = "Project Name"
+## Infrastructure name
+variable "infra" {
+  description = "Infrastructure Name"
   type        = string
-  default     = "sigdep"
-}
-
-## Bastion nodes image provider (debian12) label
-variable "bastion_node_img" {
-  description = "Linux Image label"
-  type        = string
-  default     = ""
-
-  validation {
-    condition     = length(var.bastion_node_img) > 0
-    error_message = "Linux Image label must be provided."
-  }
-}
-
-## Admin SSH Key Path
-variable "admin_access_sshkey" {
-  description = "Admin's SSH public key"
-  type        = string
-  sensitive   = true
 }
 
 ## Linode Region
 variable "region" {
   description = "Linode Region"
   type        = string
-  default     = ""
-
-  validation {
-    condition     = length(var.region) > 0
-    error_message = "Linode region must be provided."
-  }
 }
 
-## Bastion Instance Type
-variable "bastion_node_type_id" {
+## SSH Public Key
+variable "ssh_key" {
+  description = "SSH Public Key"
+  type        = string
+  sensitive   = true
+}
+
+# ## SSH Private Key
+# variable "ssh_private_key" {
+#   description = "SSH Private Key"
+#   type        = string
+#   sensitive   = true
+# }
+
+## Instance Type
+variable "nodetype" {
   description = "The type (category) of compute node instance for bastion host"
   type        = string
-  default     = ""
-
-  validation {
-    condition     = length(var.bastion_node_type_id) > 0
-    error_message = "Node type must be provided."
-  }
 }
 
-## DMZ Subnet CIDR
-variable "dmz_subnet_id" {
-  description = "Subnet ID for the DMZ subnet"
+## Nodes image; default: Debian 12
+variable "nodeimage" {
+  description = "Base Linux Image for instances"
   type        = string
-  default     = ""
-
-  validation {
-    condition     = length(var.dmz_subnet_id) > 0
-    error_message = "DMZ subnet ID must be provided."
-  }
 }
 
-## DMZ Subnet firewall ID
-variable "dmz_fw_id" {
-  description = "Firewall ID for the DMZ subnet"
+# ## Version ID for talosctl
+# variable "talosctl_version" {
+#   description = "Version ID for talosctl"
+#   type        = string
+# }
+
+# ## Version ID for kubectl
+# variable "kubectl_version" {
+#   description = "Version ID for kubectl"
+#   type        = string
+# }
+
+## VPC IPV4 for bastion node
+variable "vpc_ip" {
+  description = "VPC IPV4 for bastion node"
   type        = string
-  default     = ""
-
-  validation {
-    condition     = length(var.dmz_fw_id) > 0
-    error_message = "Firewall ID for DMZ subnet must be provided."
-  }
 }
+
+## Subnet ID for bastion host
+variable "subnet_id" {
+  description = "Subnet ID for bastion host"
+  type        = string
+}
+
+# ## Cluster Subnet CIDR
+# variable "cluster_subnet" {
+#   description = "CIDR block for the Cluster subnet"
+#   type        = string
+# }
+
+# ## Firewall ID for bastion host
+# variable "firewall_id" {
+#   description = "Firewall ID for bastion host"
+#   type        = string
+# }
+# ------------------------------------------------------------------------------
