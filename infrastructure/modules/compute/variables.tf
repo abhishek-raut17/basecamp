@@ -3,85 +3,77 @@
 # Compute Module Variables
 #
 # Variables:
-#   - project_name:             Project name
-#   - region:                   Linode region
-#   - worker_node_count:        # of worker nodes for the cluster (default: 3)
-#   - cluster_subnet_id:        ID for Cluster Subnet
-#   - cluster_fw_id:            Firewall ID to attach to Cluster subnet nodes
+#   - infra:                    Infrastructure name
+#   - region:                   Linode cluster region
+#   - ssh_key:                  SSH public key to access instances
+#   - node_img:                 Linux Image label
+#   - talos_img:                Talos OS Image ID
+#   - cluster_node_type_id:     Compute instance type for cluster nodes
+#   - bastion_node_type_id:     Compute instance type for bastion host
+#   - dmz_subnet_id:            ID of the DMZ subnet
+#   - cluster_subnet_id:        ID of the Cluster subnet
+#   - worker_node_count:        Number of worker nodes in the cluster
 ##################################################################################
 
-## Project name
-variable "project_name" {
-  description = "Project Name"
+## Infrastructure name
+variable "infra" {
+  description = "Infrastructure Name"
   type        = string
-  default     = "sigdep"
 }
 
 ## Linode Region
 variable "region" {
   description = "Linode Region"
   type        = string
-  default     = ""
-
-  validation {
-    condition     = length(var.region) > 0
-    error_message = "Linode region must be provided."
-  }
 }
 
-## Worker nodes count
-variable "worker_node_count" {
-  description = "Number of worker nodes for the cluster"
-  type        = number
-  default     = 3
-}
-
-## Bastion Instance Type
-variable "k8s_node_type_id" {
-  description = "The type (category) of compute node instance for k8s cluster host"
-  type        = string
-  default     = ""
-
-  validation {
-    condition     = length(var.k8s_node_type_id) > 0
-    error_message = "Node type must be provided."
-  }
-}
-
-
-## Cluster nodes image provider (talos) label
-variable "cluster_node_img" {
-  description = "Talos Image label"
+## SSH Public Key
+variable "ssh_key" {
+  description = "SSH Public Key"
   type        = string
   sensitive   = true
-  default     = ""
-
-  validation {
-    condition     = length(var.cluster_node_img) > 0
-    error_message = "Talos Image label must be provided."
-  }
 }
 
-## Cluster Subnet CIDR
-variable "cluster_subnet_id" {
-  description = "Subnet ID for the Cluster subnet"
+## SSH Private Key
+variable "ssh_private_key" {
+  description = "SSH Private Key"
   type        = string
-  default     = ""
-
-  validation {
-    condition     = length(var.cluster_subnet_id) > 0
-    error_message = "Cluster subnet ID must be provided."
-  }
+  sensitive   = true
 }
 
-## Cluster Subnet firewall ID
-variable "cluster_fw_id" {
-  description = "Firewall ID for the Cluster subnet"
+## Instance Type
+variable "nodetype" {
+  description = "The type (category) of compute node instance for bastion host"
   type        = string
-  default     = ""
-
-  validation {
-    condition     = length(var.cluster_fw_id) > 0
-    error_message = "Firewall ID for Cluster subnet must be provided."
-  }
 }
+
+## Nodes image; default: Debian 12
+variable "nodeimage" {
+  description = "Base Linux Image for instances"
+  type        = string
+}
+
+## Cluster Subnet ID for cluster nodes
+variable "subnet_id" {
+  description = "ID of the Cluster subnet"
+  type        = string
+}
+
+## Static VPC ipv4 for controlplane node
+variable "controlplane_ip" {
+  description = "Static VPC ipv4 for controlplane node"
+  type        = string
+}
+
+## Static VPC ipv4 for worker nodes
+variable "workers_ip" {
+  description = "Static VPC ipv4 for worker nodes"
+  type        = list(string)
+}
+
+## Cluster Firewall ID for cluster nodes
+variable "firewall_id" {
+  description = "ID of the Cluster firewall"
+  type        = string
+}
+# ------------------------------------------------------------------------------
