@@ -5,6 +5,10 @@
 **/keys/*
 !**/keys/README.md
 
+# Ignore special generated folders
+**/lib/generated/*
+**/lib/machineconfigs/*
+
 ### Git ###
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false
