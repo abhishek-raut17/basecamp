@@ -24,13 +24,16 @@ install_prerequisites() {
     log_debug "Provisioning prerequsities"
 
     # Install talosctl
-    install_tool "talosctl-linux-amd64" "sha256sum.txt" "${TALOSCTL_URL}" || return 1
+    install_bin "talosctl-linux-amd64" "sha256sum.txt" "${TALOSCTL_URL}" || return 1
 
     # Install kubectl
-    install_tool "kubectl" "kubectl.sha256" "${KUBECTL_URL}" || return 1
+    install_bin "kubectl" "kubectl.sha256" "${KUBECTL_URL}" || return 1
 
     # Install Helm
-    install_helm "${HELM_URL}" || return 1
+    install_tool "helm" "${HELM_URL}" || return 1
+
+    # Install FluxCD
+    install_tool "flux" "${FLUXCD_URL}" || return 1
 
     return 0
 }

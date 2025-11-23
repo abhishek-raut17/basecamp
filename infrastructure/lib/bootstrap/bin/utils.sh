@@ -24,6 +24,7 @@ Options:
   --kubectl-version <version>   Kubectl version
   --calico-version <version>    Calico version
   --pod-cidr <cidr>             Pod network CIDR
+  --git-token                   Github Personal Access Token
   -h, --help                    Show this help message
 
 Examples:
@@ -36,7 +37,8 @@ Examples:
      --controlplane 172.16.0.10 \\
      --workers 5 \\
      --talosctl-version v1.11.2 \\
-     --kubectl-version v1.34.1
+     --kubectl-version v1.34.1 \\
+     --git-token xxxx
 EOF
 }
 
@@ -180,9 +182,9 @@ export_variable() {
 }
 
 # ------------------------------------------------------------------------------
-# Install CLI tools
+# Install CLI bin
 # ------------------------------------------------------------------------------
-install_tool() {
+install_bin() {
     local tool="$1"
     local checksum="$2"
     local url="$3"
@@ -190,7 +192,7 @@ install_tool() {
     cmd="$(basename "$tool")"
     cmd="${cmd%%-*}"
 
-    log_debug "Installing CLI tool: $cmd in PATH."
+    log_debug "Installing CLI bin: $cmd in PATH."
 
     # Check if url is provided
     if [[ -z "$url" ]]; then
@@ -224,19 +226,20 @@ install_tool() {
         chown sentinel:ops "$tool"
 
         mv "$tool" "/usr/local/bin/$cmd"
-        log_info "CLI tool: $cmd installed IN PATH"
+        log_info "CLI bin: $cmd installed IN PATH"
     else
-        log_info "CLI tool: $cmd already in PATH"
+        log_info "CLI bin: $cmd already in PATH"
     fi
 }
 
 # ------------------------------------------------------------------------------
-# Install Helm
+# Install tools
 # ------------------------------------------------------------------------------
-install_helm() {
-    local url="$1"
+install_tool() {
+    local tool="$1"
+    local url="$2"
 
-    log_debug "Installing CLI tool: Helm in PATH."
+    log_debug "Installing CLI tool: $tool in PATH."
 
     # Check if url is provided
     if [[ -z "$url" ]]; then
@@ -244,20 +247,14 @@ install_helm() {
         return 1
     fi
 
-    if ! command -v helm >/dev/null 2>&1; then
-        log_warn "Helm not found in PATH"
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        log_warn "$tool not found in PATH"
         log_info "Fetching resources from URL: $url"
         
         curl "$url" | bash
     else
-        log_info "CLI tool: helm already in PATH"
+        log_info "CLI tool: $tool already in PATH"
     fi
-}
-
-install_fluxcd() {
-
-    log_debug "Installing CLI tool: FluxCD in PATH."
-    curl -s https://fluxcd.io/install.sh | bash
 }
 
 # ------------------------------------------------------------------------------
@@ -306,7 +303,7 @@ watch_etcd() {
     local ip="$1"
     local timeout=$2
     
-    timeout $timeout watch -n 2 "talosctl --nodes $ip service etcd"
+    timeout "$timeout" watch -n 2 "talosctl --nodes "$ip" service etcd"
 }
 
 # ------------------------------------------------------------------------------
@@ -394,11 +391,12 @@ cni_plugin() {
 }
 
 update_cni_plugin() {
+    local config="${CUSTOMIZATION_DIR}/cni.config.yaml"
 
     log_info "Customizing component: CNI plugin"
-    curl -O https://raw.githubusercontent.com/projectcalico/calico/$CALICO_VERSION/manifests/custom-resources.yaml
-    sed -i "s|192.168.0.0/16|$POD_CIDR|g" custom-resources.yaml    
-    kubectl apply -f custom-resources.yaml
+    
+    exists "file" "$config"
+    kubectl apply -f "$config"
     log_success "Customized component: CNI plugin successfully"
 }
 
@@ -434,6 +432,32 @@ setup_CNI() {
 
     # Customize CNI plugin with custom resource
     update_cni_plugin
+}
+
+# ------------------------------------------------------------------------------
+# Bootstrap fluxcd
+# ------------------------------------------------------------------------------
+boostrap_fluxcd() {
+    local user="${GIT_USER}"
+    local cluster="${CLUSTER_NAME}"
+    local token="${GIT_PAT}"
+
+    log_debug "Bootstrap fluxCD"
+
+    if [[ ! -f "$token" ]]; then
+        log_error "No git PAT provided for fluxcd operations"
+        return 1
+    fi
+
+    echo "$token" | flux bootstrap github \
+        --token-auth \
+        --owner="$user" \
+        --repository="$cluster" \
+        --branch=main \
+        --path=clusters/"$cluster" \
+        --personal
+
+    log_success "Bootstrap: FluxCD component successfully"
 }
 
 # ------------------------------------------------------------------------------

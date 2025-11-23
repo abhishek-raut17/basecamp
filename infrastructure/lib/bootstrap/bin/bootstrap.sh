@@ -41,7 +41,7 @@ bootstrap_cluster() {
         talosctl --nodes $ip bootstrap
 
         log_debug "Waiting for etcd to start. timeout: $timeout"
-        watch_etcd $ip $timeout
+        watch_etcd "$ip" $timeout
     fi
 }
 
@@ -60,10 +60,13 @@ post_bootstrap() {
     fi
 
     # Generate kubeconfig at KUBECONFIG
-    setup_kubeconfig
+    setup_kubeconfig || return 1
 
     # Setup CNI
-    setup_CNI
+    setup_CNI || return 1
+
+    # Bootstrap fluxcd
+    boostrap_fluxcd || return 1
 
     # Watch nodes via kubectl
     kube_watch "node" "ready" "default" 60

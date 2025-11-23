@@ -59,6 +59,11 @@ parse_and_validate_arguments() {
           POD_CIDR="$2"
           shift 2
           ;;
+      --git-token)
+          validate_input "$1" "$2"
+          GIT_PAT="$2"
+          shift 2
+          ;;
       -h|--help)
           usage
           exit 0
@@ -76,13 +81,17 @@ parse_and_validate_arguments() {
 # Validate required arguments
 # ------------------------------------------------------------------------------
 validate_required_args() {
-    local cluster_subnet="$1"
-    local controlplane="$2"
-    local workers=$3
+    local cluster_subnet="${CLUSTER_SUBNET}"
+    local controlplane="${CONTROLPLANE_IP}"
+    local token="${GIT_PAT}"
+    local workers=${WORKERS}
 
     log_debug "Validating if required arguments are provided"
 
-    if [ -z $cluster_subnet ] || [ -z $controlplane ] || [ $workers -lt 2 ]; then
+    if [ -z $cluster_subnet ] || 
+      [ -z $controlplane ] || 
+      [ $workers -lt 2 ] || 
+      [ -z $token ]; then
         log_error "Required arguments not provided."
         usage
         return 1;

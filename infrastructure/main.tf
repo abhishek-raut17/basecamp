@@ -216,6 +216,7 @@ module "bootstrap" {
   source         = "./modules/bootstrap"
   infra          = local.infra
   region         = local.region
+  git_token      = var.git_token
   workers_count  = length(local.workers_vpc_ip)
   cluster_subnet = local.cluster_subnet
 

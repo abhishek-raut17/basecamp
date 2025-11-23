@@ -21,7 +21,7 @@ source "${SCRIPT_DIR}/bin/bootstrap.sh"
 # ------------------------------------------------------------------------------
 # Default configuration
 # ------------------------------------------------------------------------------
-declare -r DEFAULT_VERSION="v1.9.0"
+declare -r DEFAULT_VERSION="v2.5.0"
 declare -r DEFAULT_CLUSTER_NAME="basecamp"
 declare -r DEFAULT_WORKERS=0
 declare -r DEFAULT_CONFIG_DIR="/root/.config"
@@ -37,8 +37,11 @@ BOOTSTRAP_VERSION="${DEFAULT_VERSION}"
 CLUSTER_NAME="${DEFAULT_CLUSTER_NAME}"
 CLUSTER_SUBNET=""
 CONTROLPLANE_IP=""
+GIT_PAT=""
+GIT_USER="abhishek-raut17"
 WORKERS=${DEFAULT_WORKERS}
 CONFIG_DIR="${DEFAULT_CONFIG_DIR}"
+CUSTOMIZATION_DIR="${SCRIPT_DIR}/configs"
 TALOSCONFIG_PATH="${DEFAULT_TALOSCONFIG_PATH}"
 TALOSCTL_VERSION="${DEFAULT_TALOSCTL_VERSION}"
 KUBECTL_VERSION="${DEFAULT_KUBECTL_VERSION}"
@@ -55,6 +58,7 @@ KUBECONFIG="${KUBECONFIG_DIR}/config"
 TALOSCTL_URL="https://github.com/siderolabs/talos/releases/download/$TALOSCTL_VERSION"
 KUBECTL_URL="https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64"
 HELM_URL="https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4"
+FLUXCD_URL="https://fluxcd.io/install.sh"
 
 # ------------------------------------------------------------------------------
 # Main execution
@@ -73,7 +77,7 @@ main() {
 
     # Validate arguments and required paramters
     parse_and_validate_arguments "$@"
-    validate_required_args "${CLUSTER_SUBNET}" "${CONTROLPLANE_IP}" ${WORKERS}
+    validate_required_args
 
     # Provision resources and prerequsities on bastion host
     provision_config "TALOSCONFIG" "$TALOSCONFIG"
