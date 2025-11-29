@@ -442,16 +442,6 @@ is_etcd_running() {
 }
 
 # ------------------------------------------------------------------------------
-# Watch etcd
-# ------------------------------------------------------------------------------
-watch_etcd() {
-    local ip="$1"
-    local timeout=$2
-    
-    timeout "$timeout" watch -n 2 "talosctl --nodes "$ip" service etcd"
-}
-
-# ------------------------------------------------------------------------------
 # Wait for ETCD to be valid and Running
 # ------------------------------------------------------------------------------
 wait_for_etcd() {
@@ -461,18 +451,18 @@ wait_for_etcd() {
   local interval=5
 
   if is_etcd_running "$ip"; then
-    log_info "etcd is running"
+    log_info "etcd is running (initial check)"
     return 0
   fi
 
   until is_etcd_running "$ip" || [ $elapsed -ge $timeout ]; do
       log_debug "Waiting for etcd... (${elapsed}/${timeout}s)"
-      watch_etcd "$ip" $interval
+      sleep "$interval"
       elapsed=$((elapsed + interval))
   done
 
   if is_etcd_running "$ip"; then
-      log_info "etcd is running"
+      log_info "etcd is running after ${elapsed}s"
       return 0
   else
       log_error "Timeout waiting for etcd"
@@ -507,12 +497,12 @@ label_workers() {
     log_debug "Labeling worker nodes"
 
     for (( i=0; i<$workers; i++ )); do
-        node="$prefix-worker-${i}"
+        node="${prefix}-worker-${i}"
         if kubectl get node "$node" >/dev/null 2>&1; then
             kubectl label node "$node" node-role.kubernetes.io/worker="" --overwrite || warn "Failed to label $node"
             log_info "Labeled node ${i} as $node"
         else
-            warn "Node $node not found, skipping"
+            log_warn "Node $node not found, skipping"
         fi
     done
 }

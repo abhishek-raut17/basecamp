@@ -49,11 +49,18 @@ machine:
 
 # Cluster configuration
 cluster:
-
   # CNI: Calico
   network:
     cni:
       name: none
-
+    proxy:
+      disabled: true
+  
   # Disable pod scheduling on control plane nodes
   allowSchedulingOnControlPlanes: false
+
+  # CNI Manifests
+  inlineManifests:
+    - name: cilium
+      contents: |
+        

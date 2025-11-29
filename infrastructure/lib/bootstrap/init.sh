@@ -21,7 +21,7 @@ source "${SCRIPT_DIR}/bin/bootstrap.sh"
 # ------------------------------------------------------------------------------
 # Default configuration
 # ------------------------------------------------------------------------------
-declare -r DEFAULT_VERSION="v3.3.0"
+declare -r DEFAULT_VERSION="v3.7.0"
 declare -r DEFAULT_CLUSTER_NAME="basecamp"
 declare -r DEFAULT_WORKERS=0
 declare -r DEFAULT_CONFIG_DIR="/root/.config"
