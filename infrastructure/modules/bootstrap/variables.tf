@@ -22,6 +22,12 @@ variable "region" {
   type        = string
 }
 
+## Github PAT for fluxcd git access
+variable "git_token" {
+  description = "Github PAT for fluxcd git access"
+  type        = string
+}
+
 ## Number of worker nodes
 variable "workers_count" {
   description = "Number of worker nodes in the cluster"

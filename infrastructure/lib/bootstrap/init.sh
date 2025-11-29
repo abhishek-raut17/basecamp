@@ -21,10 +21,11 @@ source "${SCRIPT_DIR}/bin/bootstrap.sh"
 # ------------------------------------------------------------------------------
 # Default configuration
 # ------------------------------------------------------------------------------
-declare -r DEFAULT_VERSION="v1.9.0"
+declare -r DEFAULT_VERSION="v3.7.0"
 declare -r DEFAULT_CLUSTER_NAME="basecamp"
 declare -r DEFAULT_WORKERS=0
 declare -r DEFAULT_CONFIG_DIR="/root/.config"
+declare -r DEFAULT_BASHRC_PATH="/root/.bashrc"
 declare -r DEFAULT_TALOSCONFIG_PATH="/tmp/talosconfig"
 declare -r DEFAULT_TALOSCTL_VERSION="v1.11.2"
 declare -r DEFAULT_KUBECTL_VERSION="v1.34.1"
@@ -37,8 +38,12 @@ BOOTSTRAP_VERSION="${DEFAULT_VERSION}"
 CLUSTER_NAME="${DEFAULT_CLUSTER_NAME}"
 CLUSTER_SUBNET=""
 CONTROLPLANE_IP=""
+GIT_PAT=""
+GIT_USER="abhishek-raut17"
 WORKERS=${DEFAULT_WORKERS}
 CONFIG_DIR="${DEFAULT_CONFIG_DIR}"
+BASHRC_PATH="${DEFAULT_BASHRC_PATH}"
+CUSTOMIZATION_DIR="${SCRIPT_DIR}/configs"
 TALOSCONFIG_PATH="${DEFAULT_TALOSCONFIG_PATH}"
 TALOSCTL_VERSION="${DEFAULT_TALOSCTL_VERSION}"
 KUBECTL_VERSION="${DEFAULT_KUBECTL_VERSION}"
@@ -52,9 +57,14 @@ KUBECONFIG_DIR="${CONFIG_DIR}/.kube"
 TALOSCONFIG="${TALOSCONFIG_DIR}/config"
 KUBECONFIG="${KUBECONFIG_DIR}/config"
 
+# Tools manifests
 TALOSCTL_URL="https://github.com/siderolabs/talos/releases/download/$TALOSCTL_VERSION"
 KUBECTL_URL="https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64"
 HELM_URL="https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4"
+FLUXCD_URL="https://fluxcd.io/install.sh"
+
+# Yaml manifests
+CNI_BASE_YAML="https://raw.githubusercontent.com/projectcalico/calico/$CALICO_VERSION/manifests/tigera-operator.yaml"
 
 # ------------------------------------------------------------------------------
 # Main execution
@@ -73,12 +83,12 @@ main() {
 
     # Validate arguments and required paramters
     parse_and_validate_arguments "$@"
-    validate_required_args "${CLUSTER_SUBNET}" "${CONTROLPLANE_IP}" ${WORKERS}
+    validate_required_args
 
     # Provision resources and prerequsities on bastion host
     provision_config "TALOSCONFIG" "$TALOSCONFIG"
     provision_config "KUBECONFIG" "$KUBECONFIG"
-    install_prerequisites
+    provision_prerequisites
 
     # Bootstrap cluster
     initialize_bootstrap

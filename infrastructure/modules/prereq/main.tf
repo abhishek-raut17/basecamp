@@ -86,7 +86,7 @@ resource "terraform_data" "generate_machineconfig" {
 }
 
 # ------------------------------------------------------------------------------
-# Generate patches for Talos nodes with predefined arrtibutes
+# Generate patches for Talos nodes with predefined attributes
 # ------------------------------------------------------------------------------
 resource "local_file" "generate_cp_patch" {
   filename = "${local.generated_dir}/controlplane-patched.yaml"
