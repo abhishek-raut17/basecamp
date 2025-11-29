@@ -50,6 +50,18 @@ variable "linode_token" {
   }
 }
 
+## Github PAT for fluxcd git access
+variable "git_token" {
+  description = "Github PAT for fluxcd git access"
+  type        = string
+  sensitive   = false
+
+  validation {
+    condition     = length(var.git_token) > 0
+    error_message = "Github PAT must be provided."
+  }
+}
+
 ## Admin SSH Key Path (public)
 variable "public_sshkey_path" {
   description = "Path to the admin's SSH public key"

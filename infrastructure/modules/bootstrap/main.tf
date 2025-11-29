@@ -176,24 +176,24 @@ resource "terraform_data" "setup_bastion" {
     timeout     = "2m"
   }
 
-  # Step 3: Send talosconfig file to bastion to use later
+  # Step 1: Send talosconfig file to bastion to use for talosctl access
   provisioner "file" {
     source      = local.talosconfig
     destination = "/tmp/talosconfig"
   }
 
-  # Step 4: Send talosctl_bootstrap file to bastion to use later
+  # Step 2: Send talosctl_bootstrap file to bastion to use for initial cluster setup
   provisioner "file" {
     source      = local.bootstrap_d
     destination = "/tmp"
   }
 
-  # Step 2: Install the required toolset for cluster management (talosctl and kubectl)
+  # Step 3: Install the required toolset for cluster management (talosctl and kubectl)
   provisioner "remote-exec" {
     inline = [
       "cd /tmp/bootstrap",
       "chmod 750 ./init.sh",
-      "./init.sh --cluster ${var.infra} --cluster-subnet ${var.cluster_subnet} --controlplane ${local.controlplane_vpc_ip} --workers ${local.workers_count} --talosconfig /tmp/talosconfig"
+      "./init.sh --cluster ${var.infra} --cluster-subnet ${var.cluster_subnet} --controlplane ${local.controlplane_vpc_ip} --workers ${local.workers_count} --talosconfig /tmp/talosconfig --git-token '${var.git_token}'"
     ]
   }
 }
