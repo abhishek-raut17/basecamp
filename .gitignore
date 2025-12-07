@@ -6,8 +6,9 @@
 !**/keys/README.md
 
 # Ignore special generated folders
-**/lib/generated/*
-**/lib/machineconfigs/*
+**/generated/*
+**/*secret.yaml
+**/*secrets.yaml
 
 ### Git ###
 # Created by git for backups. To disable backups in Git:
