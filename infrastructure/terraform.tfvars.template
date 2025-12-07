@@ -1,0 +1,52 @@
+# Terraform variables template for Basecamp infrastructure
+#
+# Copy this file to `terraform.tfvars` and replace the placeholder values below
+# with actual values before running `terraform plan` / `terraform apply`.
+# DO NOT commit secrets (API tokens, private SSH keys) to version control.
+# Set restrictive permissions on your local `terraform.tfvars`: `chmod 600 terraform.tfvars`
+
+# Project Name (default: "basecamp")
+# Example: project_name = "basecamp"
+project_name = "string"
+
+# Region (default: "us-ord")
+# Use a valid Linode region identifier
+region = "string"
+
+# Linode API Token (sensitive)
+# Example: linode_token = "0123456789abcdef0123456789abcdef01234567"
+# Prefer injecting from environment or a secret manager where possible
+linode_token = "token_string"
+
+# GitHub Personal Access Token (sensitive)
+# Example: linode_token = "github_pat_0123456789abcdef0123456789abcdef01234567"
+# Used by provisioning scripts to access private repos. Keep minimal scopes.
+git_token = "token_string"
+
+# SSH Keys Path for Admin Access (default: ~/.ssh/basecamp_rsa)
+# public should point to the .pub file, private to the private key
+public_sshkey_path  = "path_string"
+private_sshkey_path = "path_string"
+
+# VPC CIDR range; use a /16 prefix only (default: "10.0.0.0/16")
+# Example: vpc_cidr = "10.0.0.0/16"
+vpc_cidr = "cidr_string"
+
+# Compute Instance Types (Linode SKUs)
+# Examples: bastion_nodetype = "g6-nanode-1", cluster_nodetype = "g6-standard-2"
+bastion_nodetype = "string"
+cluster_nodetype = "string"
+
+# Node Image IDs (image label or private image ID)
+# Examples: bastion_nodeimage = "linode/debian12", cluster_nodeimage = "private/12345"
+bastion_nodeimage = "string"
+cluster_nodeimage = "string"
+
+# Tool versions used by provisioning (CLI tooling)
+# Examples: talosctl_version = "v1.11.2", kubectl_version = "v1.34.1"
+talosctl_version = "string"
+kubectl_version  = "string"
+
+# Number of worker nodes for the cluster (integer)
+# Minimum recommended: 3
+worker_nodes = int
