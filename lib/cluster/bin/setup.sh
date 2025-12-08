@@ -42,8 +42,7 @@ generate_machine_conf() {
 
     # Check if patches are available (critical)
     if ! exists "dir" "$patches_dir"; then
-        log_error "No template machineconfig directory found. Please ensure it at
-        $patches_dir"
+        log_error "No template patch directory found. Please ensure it at $patches_dir"
         return 1
     fi
 
@@ -60,6 +59,36 @@ generate_machine_conf() {
         --with-examples=false \
         --with-docs=false \
         --force
+
+    talosctl config endpoint ${cluster_ip} --talosconfig=${generated_dir}/talosconfig
+    talosctl config merge ${generated_dir}/talosconfig
+}
+
+patch_machine_conf() {
+    local machineconfig_dir="${MANIFEST_LIB:-}/machineconfig"
+    local generated_dir="${MANIFEST_LIB:-}/generated"
+    local patches_dir="${MANIFEST_LIB:-}/patches"
+
+    log_info "Patching machine configs for talos nodes"
+
+    # Check if machineconfig dir exists
+    if ! exists "dir" "$machineconfig_dir"; then
+        log_warn "No machineconfig directory found in manifests. Generating now"
+        create_dir "$machineconfig_dir"
+    fi
+
+    # Patch controlplane machineconfig
+    log_debug "Patching machineconfig for controlplane"
+    talosctl machineconfig patch "${generated_dir}/controlplane.yaml" \
+        --patch @"${patches_dir}/cp.machineconfig.yaml" \
+        --patch @"${patches_dir}/cni.secret.yaml" \
+        --output "${machineconfig_dir}/controlplane.machineconfig.yaml"
+
+    # Patch worker node machineconfig
+    log_debug "Patching machineconfig for worker node"
+    talosctl machineconfig patch "${generated_dir}/worker.yaml" \
+        --patch @"${patches_dir}/wkr.machineconfig.yaml" \
+        --output "${machineconfig_dir}/wkr.machineconfig.yaml"
 }
 
 # ------------------------------------------------------------------------------
@@ -81,6 +110,9 @@ main() {
 
     # Generate talosctl default machineconfigs with secrets
     generate_machine_conf
+
+    # Patch machineconfigs for controlplane and worker nodes
+    patch_machine_conf
 
     # Success
     log_success "Machine configs generated for cluster nodes init process"

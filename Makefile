@@ -60,12 +60,12 @@ setup:
 	@$(CLUSTER_LIB)/bin/setup.sh
 
 # Plan infrastructure 
-plan: prereq setup
+plan:
 	@if [ ! -f $(CLUSTER_LIB)/bin/plan.sh ]; then echo "Cluster build plan binary not found."; exit 1; fi
 	@$(CLUSTER_LIB)/bin/plan.sh
 
 # Build cluster resources
-build: plan
+build: prereq setup plan
 	@if [ ! -f $(CLUSTER_LIB)/bin/build.sh ]; then echo "Cluster build binary not found."; exit 1; fi
 	@$(CLUSTER_LIB)/bin/build.sh
 
