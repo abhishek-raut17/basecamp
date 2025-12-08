@@ -18,13 +18,12 @@ terraform {
       version = "~> 3.2.0"
     }
   }
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.5.0"
 }
 
 locals {
-  vpc_cidr       = trimspace(chomp(var.vpc_cidr))
-  dmz_subnet     = cidrsubnet(local.vpc_cidr, 8, 2)
-  cluster_subnet = cidrsubnet(local.vpc_cidr, 8, 10)
+  dmz_subnet     = cidrsubnet(var.vpc_cidr, 8, 2)  # (default: 10.0.2.0/24)
+  cluster_subnet = cidrsubnet(var.vpc_cidr, 8, 10) # (default: 10.0.10.0/24)
 }
 
 # ------------------------------------------------------------------------------
@@ -32,7 +31,7 @@ locals {
 # ------------------------------------------------------------------------------
 resource "linode_vpc" "vpc" {
   label       = "${var.infra}-vpc"
-  description = "VPC for ${var.infra}"
+  description = "VPC network for ${var.infra}"
   region      = var.region
 }
 

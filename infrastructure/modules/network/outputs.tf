@@ -9,18 +9,29 @@
 #   - dmz_subnet_cidr:       CIDR block of the DMZ subnet
 ##################################################################################
 
-output "vpc_details" {
+output "network_details" {
   depends_on = [
     linode_vpc.vpc,
-    linode_vpc_subnet.cluster_subnet
+    linode_vpc_subnet.cluster_subnet,
+    linode_vpc_subnet.dmz_subnet
   ]
   description = "VPC and subnet details"
   value = {
-    vpc_id              = linode_vpc.vpc.id
-    cluster_subnet_id   = linode_vpc_subnet.cluster_subnet.id
-    cluster_subnet_cidr = linode_vpc_subnet.cluster_subnet.ipv4
-    dmz_subnet_id       = linode_vpc_subnet.dmz_subnet.id
-    dmz_subnet_cidr     = linode_vpc_subnet.dmz_subnet.ipv4
+    vpc = {
+      id = linode_vpc.vpc.id
+      subnets = [
+        {
+          name = "cluster_subnet"
+          id   = linode_vpc_subnet.cluster_subnet.id
+          cidr = linode_vpc_subnet.cluster_subnet.ipv4
+        },
+        {
+          name = "dmz_subnet"
+          id   = linode_vpc_subnet.dmz_subnet.id
+          cidr = linode_vpc_subnet.dmz_subnet.ipv4
+        }
+      ]
+    }
   }
 }
 # ------------------------------------------------------------------------------
