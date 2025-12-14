@@ -59,9 +59,10 @@ cluster:
   network:
     cni:
       name: none
-      urls: https://raw.githubusercontent.com/abhishek-raut17/basecamp/refs/heads/main/manifests/static/cni/custom.cni.yaml
-    proxy:
-      disabled: true
+      urls: 
+        - https://raw.githubusercontent.com/abhishek-raut17/basecamp/refs/heads/main/manifests/static/cni/custom.cni.yaml
+  proxy:
+    disabled: true
   
   # Disable pod scheduling on control plane nodes
   allowSchedulingOnControlPlanes: false

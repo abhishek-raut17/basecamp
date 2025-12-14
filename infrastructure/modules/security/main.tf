@@ -16,7 +16,7 @@ terraform {
       version = "~> 3.2.0"
     }
   }
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.5.0"
 }
 
 # ------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ resource "linode_firewall" "cluster_fw" {
     action   = "ACCEPT"
     protocol = "TCP"
     ports    = "1-65535"
-    ipv4     = [var.cluster_subnet]
+    ipv4     = [var.subnet.cluster]
   }
 
   # Allow UDP from cluster subnet for internal cluster communication
@@ -40,7 +40,7 @@ resource "linode_firewall" "cluster_fw" {
     action   = "ACCEPT"
     protocol = "UDP"
     ports    = "1-65535"
-    ipv4     = [var.cluster_subnet]
+    ipv4     = [var.subnet.cluster]
   }
 
   # Allow TCP from DMZ subnet for cluster management
@@ -49,7 +49,7 @@ resource "linode_firewall" "cluster_fw" {
     action   = "ACCEPT"
     protocol = "TCP"
     ports    = "6443,50000"
-    ipv4     = [var.dmz_subnet]
+    ipv4     = [var.subnet.dmz]
   }
 
   inbound_policy  = "DROP"

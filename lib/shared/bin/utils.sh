@@ -115,32 +115,33 @@ install_bin() {
         return 1
     fi
 
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-        log_warn "$cmd not found in PATH"
-        log_info "Fetching resources from URL: $url/$tool"
-
-        curl -LO "$url/$tool"
-        curl -LO "$url/$checksum"
-
-        if cat "$checksum" | grep -q "$tool"; then
-            # checksum file already contains filename → direct verify
-            cat sha256sum.txt | grep talosctl-linux-amd64 | sha256sum -c -
-        else
-            # checksum file contains ONLY the hash → add filename dynamically
-            local hash
-            hash="$(cat "$checksum")"
-            echo "$hash  $tool" | sha256sum -c -
-        fi
-
-        chmod 0750 "$tool"
-        # Testing only (turn off in prod)
-        # chown sentinel:ops "$tool"
-
-        mv "$tool" "$bin_dir/$cmd"
-        log_info "CLI bin: $cmd installed IN $bin_dir in $PATH"
-    else
+    if command -v "$cmd" >/dev/null 2>&1; then
         log_debug "CLI bin: $cmd already in $PATH"
+        return 0
     fi
+
+    log_warn "$cmd not found in PATH"
+    log_info "Fetching resources from URL: $url/$tool"
+
+    curl -LO "$url/$tool"
+    curl -LO "$url/$checksum"
+
+    if cat "$checksum" | grep -q "$tool"; then
+        # checksum file already contains filename → direct verify
+        cat sha256sum.txt | grep talosctl-linux-amd64 | sha256sum -c -
+    else
+        # checksum file contains ONLY the hash → add filename dynamically
+        local hash
+        hash="$(cat "$checksum")"
+        echo "$hash  $tool" | sha256sum -c -
+    fi
+
+    chmod 0750 "$tool"
+    # Testing only (turn off in prod)
+    # chown sentinel:ops "$tool"
+
+    mv "$tool" "$bin_dir/$cmd"
+    log_info "CLI bin: $cmd installed IN $bin_dir in $PATH"
 
     return 0
 }
@@ -160,14 +161,15 @@ install_tool() {
         return 1
     fi
 
-    if ! command -v "$tool" >/dev/null 2>&1; then
-        log_warn "$tool not found in PATH"
-        log_info "Fetching resources from URL: $url"
-        
-        curl "$url" | bash
-    else
+    if command -v "$tool" >/dev/null 2>&1; then
         log_debug "CLI tool: $tool already in PATH"
+        return 0
     fi
+
+    log_warn "$tool not found in PATH"
+    log_info "Fetching resources from URL: $url"
+
+    curl "$url" | bash
 
     return 0
 }

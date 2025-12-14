@@ -60,14 +60,14 @@ main() {
         HELM_URL \
         CLUSTER_ENDPOINT
     
-    # Create required directories
-
     # Install CLI tools (talosctl, kubectl, helm)
     provision_prerequisites
 
     # Generate SSH keys
 
     # Organize if needed
+    export TALOSCONFIG=${TALOSCONFIG}
+    export KUBECONFIG=${KUBECONFIG}
 
     # Success
     log_success "Localhost is ready to manage: '${PROJECT_NAME}' project"
