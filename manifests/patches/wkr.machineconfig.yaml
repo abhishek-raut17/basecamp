@@ -1,5 +1,6 @@
 # Machine configuration
 machine:
+
   # Kubectl
   kubelet:
     extraArgs:
@@ -8,7 +9,7 @@ machine:
   # Network
   network:
     # Hostname
-    hostname: ${hostname}
+    hostname: hostname
 
     # Default nameservers
     nameservers:
@@ -46,21 +47,19 @@ machine:
     kubePrism:
       enabled: true
       port: 7445
+    hostDNS:
+      enabled: true
+      forwardKubeDNSToHost: false
 
 # Cluster configuration
 cluster:
+
   # CNI: Calico
   network:
     cni:
       name: none
-    proxy:
-      disabled: true
+  proxy:
+    disabled: true
   
   # Disable pod scheduling on control plane nodes
   allowSchedulingOnControlPlanes: false
-
-  # CNI Manifests
-  inlineManifests:
-    - name: cilium
-      contents: |
-        
