@@ -7,11 +7,17 @@
 # ------------------------------------------------------------------------------
 cleanup_on_error() {
     local exit_code=$?
+    local machineconfig_dir="${MANIFEST_LIB:-}/machineconfig"
+    local generated_dir="${MANIFEST_LIB:-}/generated"
 
     if [ $exit_code -gt 0 ]; then
 
         log_error "Exit code: $exit_code detected. Running cleanup process ..."
-        # cleanup
+
+        # CLEANUP
+        # Step 1: Remove generated and machineconfig directories from manifests
+        # rm -rf "$machineconfig_dir"
+        # rm -rf "$generated_dir"
     fi
 }
 
@@ -31,7 +37,7 @@ exists() {
     fi
 
     # Check if path exists
-    if [ ! -e "$basedir" ]; then
+    if [[ ! -e "$basedir" ]]; then
       log_warn "Path $basedir does not exist"
       return 1
     fi
@@ -42,7 +48,7 @@ exists() {
           if [ -f "$path" ]; then
               return 0
           else
-              log_warn "path $path exists but is not the file"
+              log_warn "No file $path found at parent dir: $basedir"
               return 1
           fi
           ;;
@@ -50,7 +56,7 @@ exists() {
           if [ -d "$path" ]; then
               return 0
           else
-              log_warn "path $path exists but is not the directory"
+              log_warn "No dir $path found at parent dir: $basedir"
               return 1
           fi
           ;;
@@ -225,18 +231,14 @@ create_file() {
 # ------------------------------------------------------------------------------
 delete_file() {
     local path="$1"
-    local dir=$(dirname "$path")
 
-    log_debug "Deleting file at $path"
+    log_debug "Deleting file at: $path"
     
     # Check if file already exists
     if exists "file" "$path"; then
         rm -f "$path"
-        log_info "File at $path deleted successfully"
-    else
-        log_info "File does not exist at $path"
+        log_info "File at: $path deleted successfully"
     fi
-
     return 0
 }
 

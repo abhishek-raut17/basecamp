@@ -58,7 +58,7 @@ cluster:
   # CNI: Cilium
   network:
     cni:
-      name: none
+      name: custom
       urls: 
         - https://raw.githubusercontent.com/abhishek-raut17/basecamp/refs/heads/main/manifests/static/cni/custom.cni.yaml
   proxy:
