@@ -33,23 +33,6 @@ terraform {
   required_version = ">= 1.0.0"
 }
 
-data "linode_instance_type" "node_type" {
-  id = var.nodetype
-}
-
-data "linode_image" "node_image" {
-  id = var.nodeimage
-}
-
-data "local_file" "cp_machineconfig" {
-  filename = "${local.machineconfig_dir}/controlplane.machineconfig.yaml"
-}
-
-data "local_file" "wkr_machineconfig" {
-  count    = length(var.workers_ip)
-  filename = "${local.machineconfig_dir}/worker-${count.index}.machineconfig.yaml"
-}
-
 locals {
 
   cluster_node_disk_size = data.linode_instance_type.node_type.disk
@@ -58,7 +41,48 @@ locals {
   cluster_image_id = data.linode_image.node_image.id
   cluster_node_id  = data.linode_instance_type.node_type.id
 
-  machineconfig_dir = "${path.module}/../prereq/lib/machineconfigs"
+  controlplane_userdata = base64encode(var.node_userdata.controlplane.content)
+  workers_userdata      = [for w in var.node_userdata.workers : base64encode(w.content)]
+
+  controlplane_private_ip = [for net in data.linode_instance_networking.cp_network.ipv4 :
+  net.private[0].address if net.private != []][0]
+  workers_private_ips = [
+    for idx in range(length(data.linode_instance_networking.wkr_network)) :
+    [for net in data.linode_instance_networking.wkr_network[idx].ipv4 :
+    net.private[0].address if net.private != []][0]
+  ]
+}
+
+data "linode_instance_type" "node_type" {
+  id = var.nodetype
+}
+
+data "linode_image" "node_image" {
+  id = var.nodeimage
+}
+
+data "linode_instance_networking" "cp_network" {
+  depends_on = [
+    linode_instance.control_plane,
+    linode_instance_disk.cp_boot_disk,
+    linode_instance_config.cp_boot_config,
+    linode_firewall_device.controlplane_fw_device
+  ]
+
+  linode_id = linode_instance.control_plane.id
+}
+
+data "linode_instance_networking" "wkr_network" {
+  depends_on = [
+    linode_instance.worker,
+    linode_instance_disk.wkr_boot_disk,
+    linode_instance_disk.wkr_storage_disk,
+    linode_instance_config.wkr_boot_config,
+    linode_firewall_device.wkr_node_fw_device
+  ]
+
+  count     = length(var.workers_ip)
+  linode_id = linode_instance.worker[count.index].id
 }
 
 # ------------------------------------------------------------------------------
@@ -67,7 +91,7 @@ locals {
 resource "linode_instance" "control_plane" {
   depends_on = [
     data.linode_instance_type.node_type,
-    data.local_file.cp_machineconfig
+    local.controlplane_userdata
   ]
 
   label      = "${var.infra}-control-plane"
@@ -76,7 +100,7 @@ resource "linode_instance" "control_plane" {
   private_ip = true
 
   metadata {
-    user_data = data.local_file.cp_machineconfig.content_base64
+    user_data = local.controlplane_userdata
   }
 
   tags = ["test", "cluster", "control-plane", "${var.infra}"]
@@ -90,7 +114,7 @@ resource "linode_instance" "worker" {
 
   depends_on = [
     data.linode_instance_type.node_type,
-    data.local_file.wkr_machineconfig
+    local.workers_userdata
   ]
 
   label      = "${var.infra}-worker-${count.index}"
@@ -99,7 +123,7 @@ resource "linode_instance" "worker" {
   private_ip = true
 
   metadata {
-    user_data = data.local_file.wkr_machineconfig[count.index].content_base64
+    user_data = local.workers_userdata[count.index]
   }
 
   tags = ["test", "cluster", "worker-${count.index}", "${var.infra}"]
@@ -215,38 +239,77 @@ resource "linode_instance_config" "wkr_boot_config" {
 }
 
 # ------------------------------------------------------------------------------
-# Bootstrap cluster
+# Control plane firewall: Attach control plane node to cluster subnet firewall
 # ------------------------------------------------------------------------------
-# resource "terraform_data" "bootstrap_cluster" {
+resource "linode_firewall_device" "controlplane_fw_device" {
+  firewall_id = var.firewall_id
+  entity_id   = linode_instance.control_plane.id
+}
+
+# ------------------------------------------------------------------------------
+# Worker nodes firewall: Attach worker nodes to cluster subnet firewall
+# ------------------------------------------------------------------------------
+resource "linode_firewall_device" "wkr_node_fw_device" {
+  count       = length(var.workers_ip)
+  firewall_id = var.firewall_id
+  entity_id   = linode_instance.worker[count.index].id
+}
+
+# ------------------------------------------------------------------------------
+# Configure nodebalancer backend nodes
+# ------------------------------------------------------------------------------
+# resource "linode_nodebalancer_node" "http_nodes" {
 #   depends_on = [
 #     linode_instance.control_plane,
 #     linode_instance.worker,
-#     linode_instance_config.cp_boot_config,
-#     linode_instance_config.wkr_boot_config
+#     data.linode_instance_networking.cp_network,
+#     data.linode_instance_networking.wkr_network
 #   ]
 
-#   triggers_replace = {
-#     controlplane   = linode_instance.control_plane.id
-#     workers        = linode_instance.worker.*.id
-#     cp_bootconfig  = linode_instance_config.cp_boot_config.id
-#     wkr_bootconfig = linode_instance_config.wkr_boot_config.*.id
-#   }
-
-#   connection {
-#     type        = "ssh"
-#     host        = var.bastion_ip
-#     user        = "root"
-#     private_key = var.ssh_private_key
-#     timeout     = "2m"
-#   }
-
-#   # Bootstrap cluster by running talosctl init script on bastion
-#   provisioner "remote-exec" {
-#     inline = [
-#       "cd /root/${var.infra}/.configs/.talos",
-#       "chmod 0750 init.sh",
-#       "./init.sh ${var.controlplane_ip}"
-#     ]
-#   }
+#   count           = length(var.workers_ip)
+#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
+#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "http"][0]
+#   address         = "${local.workers_private_ips[count.index]}:80"
+#   label           = "${var.infra}-${count.index}-http-port-lb"
+#   weight          = 100
+#   mode            = "accept"
 # }
+
+# resource "linode_nodebalancer_node" "https_nodes" {
+#   depends_on = [
+#     linode_instance.control_plane,
+#     linode_instance.worker,
+#     data.linode_instance_networking.cp_network,
+#     data.linode_instance_networking.wkr_network
+#   ]
+
+#   count           = length(var.workers_ip)
+#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
+#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "https"][0]
+#   address         = "${local.workers_private_ips[count.index]}:443"
+#   label           = "${var.infra}-${count.index}-https-port-lb"
+#   weight          = 100
+#   mode            = "accept"
+# }
+
+# FOR TESTING PURPOSES ONLY - COMMENT OUT FOR PRODUCTION USAGE
+#
+# resource "linode_nodebalancer_node" "kubectlapi_nodes" {
+#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
+#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "kubectl_api"][0]
+#   address         = "${local.controlplane_private_ip}:6443"
+#   label           = "${var.infra}-kubectlapi-port-lb"
+#   weight          = 100
+#   mode            = "accept"
+# }
+
+# resource "linode_nodebalancer_node" "talosctlapi_nodes" {
+#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
+#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "talosctl_api"][0]
+#   address         = "${local.controlplane_private_ip}:50000"
+#   label           = "${var.infra}-talosctlapi-port-lb"
+#   weight          = 100
+#   mode            = "accept"
+# }
+
 # ------------------------------------------------------------------------------
