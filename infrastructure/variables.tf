@@ -63,26 +63,14 @@ variable "git_token" {
 }
 
 ## Admin SSH Key Path (public)
-variable "public_sshkey_path" {
-  description = "Path to the admin's SSH public key"
+variable "sshkey_path" {
+  description = "Path to the SSH keys for admin access (default: ~/.ssh/id_rsa.pub)"
   type        = string
   sensitive   = true
 
   validation {
-    condition     = length(var.public_sshkey_path) > 0
-    error_message = "Path to the admin's SSH public key must be provided."
-  }
-}
-
-## Admin SSH Key Path (private)
-variable "private_sshkey_path" {
-  description = "Path to the admin's SSH private key"
-  type        = string
-  sensitive   = true
-
-  validation {
-    condition     = length(var.private_sshkey_path) > 0
-    error_message = "Path to the admin's SSH private key must be provided."
+    condition     = fileexists(var.sshkey_path)
+    error_message = "Path to the SSH keys must be provided. (default: ~/.ssh/id_rsa.pub)"
   }
 }
 
@@ -92,8 +80,8 @@ variable "vpc_cidr" {
   type        = string
 
   validation {
-    condition     = length(var.vpc_cidr) > 0
-    error_message = "VPC CIDR range must be provided."
+    condition     = can(cidrnetmask(var.vpc_cidr)) && split("/", var.vpc_cidr)[1] == "16"
+    error_message = "VPC CIDR must be a valid CIDR with /16 subnet mask (e.g.10.0.0.0/16)."
   }
 }
 
@@ -120,45 +108,45 @@ variable "cluster_nodetype" {
 }
 
 ## Bastion nodes node image ID
-variable "bastion_nodeimage" {
+variable "bastion_img" {
   description = "Node image ID for bastion nodes"
   type        = string
 
   validation {
-    condition     = length(var.bastion_nodeimage) > 0
+    condition     = length(var.bastion_img) > 0
     error_message = "Node ID for bastion nodes must be provided"
   }
 }
 
 ## Cluster nodes node image ID
-variable "cluster_nodeimage" {
+variable "cluster_img" {
   description = "Node image ID for cluster nodes"
   type        = string
 
   validation {
-    condition     = length(var.cluster_nodeimage) > 0
+    condition     = length(var.cluster_img) > 0
     error_message = "Node ID for cluster nodes must be provided"
   }
 }
 
 ## Version ID for talosctl
-variable "talosctl_version" {
+variable "v_talosctl" {
   description = "Version ID for talosctl"
   type        = string
 
   validation {
-    condition     = length(var.talosctl_version) > 0
+    condition     = length(var.v_talosctl) > 0 && startswith(var.v_talosctl, "v")
     error_message = "Version ID for talosctl must be provided"
   }
 }
 
 ## Version ID for kubectl
-variable "kubectl_version" {
+variable "v_kubectl" {
   description = "Version ID for kubectl"
   type        = string
 
   validation {
-    condition     = length(var.kubectl_version) > 0
+    condition     = length(var.v_kubectl) > 0 && startswith(var.v_kubectl, "v")
     error_message = "Version ID for kubectl must be provided"
   }
 }
