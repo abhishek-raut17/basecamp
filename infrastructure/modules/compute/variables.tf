@@ -76,4 +76,35 @@ variable "firewall_id" {
   description = "ID of the Cluster firewall"
   type        = string
 }
+
+## Cloud-init styled user data for node configuration
+variable "node_userdata" {
+  description = "Cloud-init styled user data for node configuration"
+  type = object({
+    controlplane = object({
+      filename = string,
+      content  = string
+    }),
+    workers = list(object({
+      filename = string,
+      content  = string
+    }))
+  })
+}
+
+## Nodebalancer details
+variable "gateway_nodebalancer" {
+  description = "Nodebalancer details for gateway access"
+  type = object({
+    gateway = object({
+      id       = string,
+      hostname = string,
+      ip       = string,
+      configs = list(object({
+        name = string,
+        id   = string
+      }))
+    })
+  })
+}
 # ------------------------------------------------------------------------------

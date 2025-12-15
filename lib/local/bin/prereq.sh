@@ -55,11 +55,15 @@ main() {
 
     # Check if required variables are avaiable
     validate_required_args PROJECT_NAME BIN_DIR \
-        TALOSCTL_URL TALOSCONFIG \
-        KUBECTL_URL KUBECONFIG \
-        HELM_URL \
-        CLUSTER_ENDPOINT
-    
+        CLOUD_PROVIDER_PAT GITHUB_PAT ACCESS_SSHKEY_PATH \
+        TALOSCONFIG KUBECONFIG \
+        TALOSCTL_URL KUBECTL_URL HELM_URL FLUXCD_URL \
+        CLOUD_PROVIDER_REGION VPC_CIDR \
+        NODETYPE_BASTION NODETYPE_CLUSTER \
+        IMG_BASTION IMG_CLUSTER \
+        VERSION_TALOSCTL VERSION_KUBECTL \
+        CLUSTER_ENDPOINT WORKER_NODES
+
     # Install CLI tools (talosctl, kubectl, helm)
     provision_prerequisites
 

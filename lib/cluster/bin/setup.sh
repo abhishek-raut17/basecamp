@@ -33,10 +33,10 @@ check_cni_manifest() {
 }
 
 generate_machine_conf() {
-    local generated_dir="${MANIFEST_LIB:-}/generated"
-    local patches_dir="${MANIFEST_LIB:-}/patches"
     local project_name="${1:-${PROJECT_NAME:-basecamp}}"
     local cluster_ip="${2:-${CLUSTER_ENDPOINT:-10.0.10.10}}"
+    local generated_dir="${MANIFEST_LIB:-}/generated"
+    local patches_dir="${MANIFEST_LIB:-}/patches"
 
     log_info "Generating machine configs for talos nodes"
 
@@ -81,7 +81,6 @@ patch_machine_conf() {
     log_debug "Patching machineconfig for controlplane"
     talosctl machineconfig patch "${generated_dir}/controlplane.yaml" \
         --patch @"${patches_dir}/cp.machineconfig.yaml" \
-        --patch @"${patches_dir}/cni.secret.yaml" \
         --output "${machineconfig_dir}/controlplane.machineconfig.yaml"
 
     # Patch worker node machineconfig

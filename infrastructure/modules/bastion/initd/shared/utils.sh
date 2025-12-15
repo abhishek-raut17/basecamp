@@ -7,17 +7,11 @@
 # ------------------------------------------------------------------------------
 cleanup_on_error() {
     local exit_code=$?
-    local machineconfig_dir="${MANIFEST_LIB:-}/machineconfig"
-    local generated_dir="${MANIFEST_LIB:-}/generated"
 
     if [ $exit_code -gt 0 ]; then
 
         log_error "Exit code: $exit_code detected. Running cleanup process ..."
-
-        # CLEANUP
-        # Step 1: Remove generated and machineconfig directories from manifests
-        # rm -rf "$machineconfig_dir"
-        # rm -rf "$generated_dir"
+        # cleanup
     fi
 }
 
@@ -107,7 +101,7 @@ install_bin() {
     local tool="$1"
     local checksum="$2"
     local url="$3"
-    local bin_dir="${4:-${BIN_DIR}}"
+    local bin_dir="${4:-/usr/local/bin}"
 
     local cmd
     cmd="$(basename "$tool")"
@@ -225,7 +219,6 @@ create_file() {
     return 0
 }
 
-
 # ------------------------------------------------------------------------------
 # Create file
 # ------------------------------------------------------------------------------
@@ -240,34 +233,6 @@ delete_file() {
         log_info "File at: $path deleted successfully"
     fi
     return 0
-}
-
-# ------------------------------------------------------------------------------
-# Usage function
-# ------------------------------------------------------------------------------
-doc_gen_cni_template() {
-    cat <<EOF
-
-Generate CNI template and move to manifests/static/cni path under project root directory
-
-Usage: 
-helm template \
-    cilium \
-    cilium/cilium \
-    --version 1.18.0 \
-    --namespace kube-system \
-    --set ipam.mode=kubernetes \
-    --set kubeProxyReplacement=true \
-    --set securityContext.capabilities.ciliumAgent="{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}" \
-    --set securityContext.capabilities.cleanCiliumState="{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}" \
-    --set cgroup.autoMount.enabled=false \
-    --set cgroup.hostRoot=/sys/fs/cgroup \
-    --set k8sServiceHost=localhost \
-    --set gatewayAPI.enabled=true \
-    --set gatewayAPI.enableAlpn=true \
-    --set gatewayAPI.enableAppPrototcol=true \
-    --set k8sServicePort=7445 > cni.cilium.yaml
-EOF
 }
 
 # ------------------------------------------------------------------------------

@@ -33,6 +33,7 @@ cleanup() {
     # Delete sha256sum files
     delete_file "${ROOT_DIR}/kubectl.sha256"
     delete_file "${ROOT_DIR}/sha256sum.txt"
+    # delete_file "${INFRA_DIR}/terraform.tfvars"
 
     # Completed
     log_section "All cleanup tasks completed"

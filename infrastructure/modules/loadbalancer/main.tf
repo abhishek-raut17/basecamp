@@ -91,4 +91,15 @@ resource "linode_nodebalancer_config" "https" {
 #   stickiness      = "none"
 #   check           = "none"
 # }
+
+# ------------------------------------------------------------------------------
+# Loadbalancer firewall: Attach nodebalancer to dmz firewall
+# ------------------------------------------------------------------------------
+resource "linode_firewall_device" "gateway_fw_device" {
+
+  firewall_id = var.firewall_id
+  entity_id   = linode_nodebalancer.gateway_lb.id
+  entity_type = "nodebalancer"
+}
+
 # ------------------------------------------------------------------------------

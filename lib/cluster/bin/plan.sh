@@ -14,7 +14,29 @@ source "${SHARED_LIB}/bin/utils.sh"
 # Default configuration
 # ------------------------------------------------------------------------------
 declare -r VERSION="v1.0.0"
-PLAN="plan-v1.tfplan"
+
+# ------------------------------------------------------------------------------
+# Generate .tfvars when generating plan from environment variables
+# ------------------------------------------------------------------------------
+generate_tfvars() {
+    local template="${INFRA_DIR:-}/terraform.tfvars.template"
+    local genfile="${INFRA_DIR:-}/terraform.tfvars"
+
+    log_info "Generating .tfvars for terraform tasks using template: $template at $genfile"
+
+    if ! exists "file" "$template"; then
+        log_error "No terraform.tfvars.template found at $template"
+        return 1
+    fi
+
+    envsubst < "$template" > "$genfile" || {
+        log_warn "Error generating .tfvars from $template."
+        return 1
+    }
+
+    log_success "Successfully generated .tfvars at: $genfile"
+    return 0
+}
 
 # ------------------------------------------------------------------------------
 # Main function
@@ -36,10 +58,11 @@ main() {
         return 1
     fi
 
-    # TODO: Verify all tfvars are present (ref.terraform.tfvars.template)
-
     # CHDIR to infrastructure
     cd $INFRA_DIR
+
+    # Setup .tfvars for terraform tasks
+    generate_tfvars
 
     # Init terraform providers
     terraform init -upgrade
