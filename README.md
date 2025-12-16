@@ -58,3 +58,6 @@ helm template cilium cilium/cilium \
   --set gatewayAPI.enableAppPrototcol=true \
   > custom.cni.yaml
 ```
+
+## FluxCD Steps: 
+1. Generate SSH key (ed25519) and add public key to github as deploy key

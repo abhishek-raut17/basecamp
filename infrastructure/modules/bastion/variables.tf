@@ -38,6 +38,13 @@ variable "private_key" {
   sensitive   = true
 }
 
+## Devops SSH Private Key
+variable "devops_cd_sshkey" {
+  description = "SSH Private Key to bootstrap fluxcd"
+  type        = string
+  sensitive   = true
+}
+
 ## Instance Type
 variable "nodetype" {
   description = "The type (category) of compute node instance for bastion host"
@@ -86,9 +93,15 @@ variable "cluster_subnet" {
   type        = string
 }
 
-# ## Firewall ID for bastion host
+## Firewall ID for bastion host
 variable "firewall_id" {
   description = "Firewall ID for bastion host"
+  type        = string
+}
+
+## Git repository for deployment manifests
+variable "git_repo" {
+  description = "Git repository for deployment manifests"
   type        = string
 }
 # ------------------------------------------------------------------------------

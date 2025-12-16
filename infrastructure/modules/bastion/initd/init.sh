@@ -11,14 +11,19 @@ declare -r INITD="/usr/local/bin/initd"
 # ---------------------------------------------------------------------------
 RELEASE_VERSION="${RELEASE_VERSION:-v1.0.0}"
 VERSION="${VERSION:-v1.0.0}"
+LOG_LEVEL=${LOG_LEVEL:-0}
 
 TALOS_DIR="${TALOS_DIR:-/root/.configs/.talos}"
 KUBE_DIR="${KUBE_DIR:-/root/.configs/.kube}"
+GIT_REPO="${GIT_REPO:-ssh://git@github.com/abhishek-raut17/basecamp.git}"
+SSH_KEY_PATH="${SSH_KEY_PATH:-/tmp/devops_cd}"
 
 V_TALOSCTL=${V_TALOSCTL:-v1.11.2}
 V_KUBECTL=${V_KUBECTL:-v1.34.1}
+V_FLUXCD=${V_FLUXCD:-}
 TALOSCTL_URL="${TALOSCTL_URL:-https://github.com/siderolabs/talos/releases/download/${V_TALOSCTL}}"
 KUBECTL_URL="${KUBECTL_URL:-https://dl.k8s.io/release/${V_KUBECTL}/bin/linux/amd64}"
+FLUXCD_URL="${FLUXCD_URL:-https://fluxcd.io/install.sh}"
 
 CLUSTER_SUBNET="${CLUSTER_SUBNET:-10.0.10.0/24}"
 CLUSTER_ENDPOINT="${CLUSTER_ENDPOINT:-10.0.10.10}"
@@ -35,6 +40,7 @@ source "${INITD}/shared/utils.sh"
 provision_prerequisites() {
     local talos_url="${1:-${TALOSCTL_URL}}"
     local kube_url="${2:-${KUBECTL_URL}}"
+    local flux_url="${3:-${FLUXCD_URL}}"
 
     log_info "Provisioning prerequsities"
 
@@ -43,6 +49,12 @@ provision_prerequisites() {
 
     # Install kubectl
     install_bin "kubectl" "kubectl.sha256" "$kube_url"
+
+    # Install Helm
+    # install_tool "helm" "$helm_url"
+
+    # Install FluxCD
+    install_tool "flux" "$flux_url"
 
     log_success "Provisioned prerequsities successfully"
 }
@@ -72,6 +84,8 @@ EOF
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            --sshkey-path)
+                SSH_KEY_PATH="$2"; shift 2;;
             --cluster-endpoint)
                 CLUSTER_ENDPOINT="$2"; shift 2;;
             --cluster-subnet)
@@ -80,10 +94,14 @@ parse_args() {
                 TALOS_DIR="$2"; shift 2;;
             --kube-dir)
                 KUBE_DIR="$2"; shift 2;;
+            --git-repo)
+                GIT_REPO="$2"; shift 2;;
             --talos-version)
                 V_TALOSCTL="$2"; shift 2;;
             --kube-version)
                 V_KUBECTL="$2"; shift 2;;
+            --fluxcd-version)
+                V_FLUXCD="$2"; shift 2;;
             -h|--help)
                 usage; exit 0;;
             --)
@@ -128,25 +146,67 @@ main() {
     # Step 3: Install bin and tools for cluster management
     provision_prerequisites
 
-    # Step 4: Setup talosctl config
+    # Step 4: Setup talosctl config nodes, endpoint
     log_info "Copying /tmp/talosconfig to ${TALOS_DIR}/config"
-    cp /tmp/talosconfig "${TALOS_DIR}/config"
-    talosctl config nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config
-    talosctl config endpoint ${CLUSTER_ENDPOINT} --nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config
+    if cp /tmp/talosconfig "${TALOS_DIR}/config" 2>/dev/null; then
+        log_debug "Copied /tmp/talosconfig successfully"
+    else
+        log_debug "File /tmp/talosconfig does not exist"    
+    fi
 
-    # Step 5: Generate kube config
-    log_info "Initializing bootstrap process for talos nodes"
-    talosctl bootstrap --nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config
+    log_info "Setting up talos nodes and endpoint for cluster: ${CLUSTER_ENDPOINT}"
+    # talosctl config merge /tmp/talosconfig --talosconfig ${TALOS_DIR}/config
+    talosctl config nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config 2>/dev/null
+    talosctl config endpoint ${CLUSTER_ENDPOINT} --nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config 2>/dev/null
+
+    # Step 5: Bootstrap talos nodes
+    if talosctl --nodes ${CLUSTER_ENDPOINT} --endpoints ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config etcd members >/dev/null 2>&1; then
+        log_warn "Cluster already bootstrap at endpoint: ${CLUSTER_ENDPOINT}"
+    else
+        log_info "Initializing bootstrap process for talos nodes"
+        if talosctl bootstrap --nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config; then
+            log_success "Cluster at endpoint: ${CLUSTER_ENDPOINT} bootstrapped successfully"
+        else
+            log_error "Failed to bootstrap cluster at endpoint: ${CLUSTER_ENDPOINT}"
+            exit 1
+        fi
+    fi
 
     # Step 6: Setup kubeconfig
     log_info "Generating kubeconfig for cluster node access"
     talosctl kubeconfig --nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config --merge --force
 
+    log_debug "Sleeping for 10s waiting for cluster to bootup"
     sleep 10 # needed due to slow bootup speeds of ec2 instances
 
     # Log cluster initial state
+    log_info "Cluster health: endpoint: ${CLUSTER_ENDPOINT}"
     talosctl health --nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config
     # kubectl get nodes -o wide
+
+    # Bootstrap flux
+    if command -v flux >/dev/null 2>&1; then
+        log_info "Bootstraping FluxCD for git repo: ${GIT_REPO}"
+
+        if ! exists "file" "$SSH_KEY_PATH"; then
+            log_debug "SSH key for devops_cd doesnt exists at: $SSH_KEY_PATH. Copy .pub file for deploy key"
+            ssh-keygen -t ed25519 -f "$SSH_KEY_PATH" -N "" -C "fluxcd-devops" || {
+                log_error "Cannot find or generate ssh key to bootstrap fluxcd"
+                exit 1
+            }
+        else
+            log_debug "Found SSH key for FluxCD bootstrap at: $SSH_KEY_PATH"
+        fi
+
+        flux bootstrap git \
+            --url=${GIT_REPO} \
+            --branch=deployment \
+            --private-key-file=${SSH_KEY_PATH} \
+            --author-name="Flux Bot" \
+            --author-email="flux-bot@sigdep.cloud" \
+            --path=clusters/production \
+            --silent
+    fi
 
     # Success
     log_success "Bastion host setup completed successfully"
@@ -155,7 +215,7 @@ main() {
     # Cleanup
     rm -rf kubectl.sha256
     rm -rf sha256sum.txt
-    rm -rf /tmp/talosconfig
+    # rm -rf /tmp/talosconfig
 }
 
 # ------------------------------------------------------------------------------

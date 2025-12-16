@@ -14,7 +14,6 @@ source "${SHARED_LIB}/bin/utils.sh"
 # Default configuration
 # ------------------------------------------------------------------------------
 declare -r VERSION="v1.0.0"
-declare -r PLAN="plan-v1.tfplan"
 
 # ------------------------------------------------------------------------------
 # Verify infrastructure build plan
@@ -50,9 +49,9 @@ main() {
     verify_plan "$PLAN"
 
     # Apply plan
-    # If DRYRUN is set to a value > 0 we treat this as a dry run and skip applying
+    # If DRY_RUN is set to a value > 0 we treat this as a dry run and skip applying
     # the terraform plan. Use a default of 0 to avoid unset-variable errors.
-    if [[ "${DRYRUN:-0}" -gt 0 ]]; then
+    if [[ "${DRY_RUN:-0}" -gt 0 ]]; then
         log_warn "Dry run enabled; skipping terraform apply"
     else
         log_info "Executing terraform plan: $PLAN"

@@ -132,23 +132,29 @@ resource "terraform_data" "setup_bastion" {
     destination = "/tmp/talosconfig"
   }
 
-  # Step 2: Send initd dir to bastion to use to setup bastion for cluster access
+  # Step 2: Send private key to bastion to use for git access
+  provisioner "file" {
+    content     = var.devops_cd_sshkey
+    destination = "/tmp/devops_cd"
+  }
+
+  # Step 3: Send initd dir to bastion to use to setup bastion for cluster access
   provisioner "file" {
     source      = local.bastion_initd
     destination = "/usr/local/bin"
   }
 
-  # Step 3: Set execute permissions on initd scripts
+  # Step 4: Set execute permissions on initd scripts
   provisioner "remote-exec" {
     inline = [
       "chmod 0750 /usr/local/bin/initd/*"
     ]
   }
 
-  # Step 4: Run initd script to setup bastion for cluster access
+  # Step 5: Run initd script to setup bastion for cluster access
   provisioner "remote-exec" {
     inline = [
-      "/usr/local/bin/initd/init.sh --cluster-endpoint ${var.cluster_endpoint} --cluster-subnet ${var.cluster_subnet}"
+      "/usr/local/bin/initd/init.sh --cluster-endpoint ${var.cluster_endpoint} --cluster-subnet ${var.cluster_subnet} --git-repo ${var.git_repo} --sshkey-path /tmp/devops_cd"
     ]
   }
 }
