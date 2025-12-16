@@ -54,8 +54,8 @@ main() {
     echo ""
 
     # Check if required variables are avaiable
-    validate_required_args PROJECT_NAME BIN_DIR \
-        CLOUD_PROVIDER_PAT GITHUB_PAT ACCESS_SSHKEY_PATH \
+    validate_required_args PROJECT_NAME GIT_REPO BIN_DIR DRY_RUN \
+        CLOUD_PROVIDER_PAT GITHUB_PAT ACCESS_SSHKEY_PATH FLUXCD_SSHKEY_PATH \
         TALOSCONFIG KUBECONFIG \
         TALOSCTL_URL KUBECTL_URL HELM_URL FLUXCD_URL \
         CLOUD_PROVIDER_REGION VPC_CIDR \
@@ -68,6 +68,8 @@ main() {
     provision_prerequisites
 
     # Generate SSH keys
+    # 1. ssh key for cluster access via bastion
+    # 2. ssh key for flux cd
 
     # Organize if needed
     export TALOSCONFIG=${TALOSCONFIG}
