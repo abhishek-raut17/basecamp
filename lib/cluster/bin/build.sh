@@ -14,15 +14,14 @@ source "${SHARED_LIB}/bin/utils.sh"
 # Default configuration
 # ------------------------------------------------------------------------------
 declare -r VERSION="v1.0.0"
-PLAN="plan-v1.tfplan"
 
 # ------------------------------------------------------------------------------
 # Verify infrastructure build plan
 # ----------------------------------------------------------------------------
 verify_plan() {
     local plan="${1:-$PLAN}"
-    plan="$INFRA_DIR/$plan"
 
+    log_debug "Verifying terraform execution plan"
     if ! exists "file" "$plan"; then
         log_warn "Plan does not exist for the current changes. Initiating planning"
         source ./plan.sh
@@ -34,6 +33,8 @@ verify_plan() {
 # Main function
 # ------------------------------------------------------------------------------
 main() {
+    
+    cd "$INFRA_DIR"
 
     # Setup error handling
     trap cleanup_on_error EXIT ERR INT TERM
@@ -45,10 +46,17 @@ main() {
     echo ""
 
     # Verify if a plan is generated, if not generate a new one
-    verify_plan
+    verify_plan "$PLAN"
 
     # Apply plan
-    # terraform apply plan
+    # If DRY_RUN is set to a value > 0 we treat this as a dry run and skip applying
+    # the terraform plan. Use a default of 0 to avoid unset-variable errors.
+    if [[ "${DRY_RUN:-0}" -gt 0 ]]; then
+        log_warn "Dry run enabled; skipping terraform apply"
+    else
+        log_info "Executing terraform plan: $PLAN"
+        terraform apply "$PLAN"
+    fi
 
     # Success
     log_success "Infrastructure build process completed successfully"

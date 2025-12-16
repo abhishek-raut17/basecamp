@@ -51,6 +51,10 @@ machine:
       enabled: true
       forwardKubeDNSToHost: false
 
+  # Node labels
+  nodeLabels:
+    node-role.kubernetes.io/worker: ""
+
 # Cluster configuration
 cluster:
 

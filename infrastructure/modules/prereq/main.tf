@@ -69,13 +69,13 @@ locals {
 # Generate patches machineconfig files with predefined hostnames
 # ------------------------------------------------------------------------------
 resource "local_file" "cp_machineconfig" {
-  filename = local.cp_machineconfig_path
+  filename = replace(local.cp_machineconfig_path, ".machineconfig.yaml", ".patched.machineconfig.yaml")
   content  = yamlencode(local.patched_controlplane_config)
 }
 
 resource "local_file" "wkr_machineconfig" {
   count    = var.worker_count
-  filename = local.wkr_machineconfig_path
+  filename = replace(local.wkr_machineconfig_path, ".machineconfig.yaml", "-${count.index}.patched.machineconfig.yaml")
   content  = yamlencode(local.patched_worker_config[count.index])
 }
 # ------------------------------------------------------------------------------

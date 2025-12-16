@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-
+# Shared lib: logger file for logging
+#
 # Color codes
 readonly COLOR_RESET='\033[0m'
 readonly COLOR_BOLD='\033[1m'

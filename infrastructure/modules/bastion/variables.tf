@@ -26,17 +26,24 @@ variable "region" {
 
 ## SSH Public Key
 variable "ssh_key" {
-  description = "SSH Public Key"
+  description = "SSH Key to access instances"
   type        = string
   sensitive   = true
 }
 
-# ## SSH Private Key
-# variable "ssh_private_key" {
-#   description = "SSH Private Key"
-#   type        = string
-#   sensitive   = true
-# }
+## SSH Private Key
+variable "private_key" {
+  description = "SSH Private Key to access bastion host"
+  type        = string
+  sensitive   = true
+}
+
+## Devops SSH Private Key
+variable "devops_cd_sshkey" {
+  description = "SSH Private Key to bootstrap fluxcd"
+  type        = string
+  sensitive   = true
+}
 
 ## Instance Type
 variable "nodetype" {
@@ -62,6 +69,12 @@ variable "nodeimage" {
 #   type        = string
 # }
 
+## Cluster endpoint
+variable "cluster_endpoint" {
+  description = "Controlplane endpoint for cluster access"
+  type        = string
+}
+
 ## VPC IPV4 for bastion node
 variable "vpc_ip" {
   description = "VPC IPV4 for bastion node"
@@ -74,15 +87,21 @@ variable "subnet_id" {
   type        = string
 }
 
-# ## Cluster Subnet CIDR
-# variable "cluster_subnet" {
-#   description = "CIDR block for the Cluster subnet"
-#   type        = string
-# }
+## Cluster Subnet CIDR
+variable "cluster_subnet" {
+  description = "CIDR block for the Cluster subnet"
+  type        = string
+}
 
-# ## Firewall ID for bastion host
-# variable "firewall_id" {
-#   description = "Firewall ID for bastion host"
-#   type        = string
-# }
+## Firewall ID for bastion host
+variable "firewall_id" {
+  description = "Firewall ID for bastion host"
+  type        = string
+}
+
+## Git repository for deployment manifests
+variable "git_repo" {
+  description = "Git repository for deployment manifests"
+  type        = string
+}
 # ------------------------------------------------------------------------------
