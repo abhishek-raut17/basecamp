@@ -44,6 +44,9 @@ locals {
   public_key  = trimspace(chomp(file(var.sshkey_path)))
   private_key = trimspace(chomp(file(replace(var.sshkey_path, ".pub", ""))))
 
+  devops_cd_sshkey      = trimspace(chomp(file(var.fluxcd_sshkey_path)))
+  devops_cd_private_key = trimspace(chomp(file(replace(var.fluxcd_sshkey_path, ".pub", ""))))
+
   # talosctl_version = trimspace(chomp(var.talosctl_version))
   # kubectl_version  = trimspace(chomp(var.kubectl_version))
 
@@ -62,6 +65,8 @@ locals {
   cluster_firewall_id = module.security.security_details.firewall.cluster
   dmz_firewall_id     = module.security.security_details.firewall.dmz
   loadbalancer_fw_id  = module.security.security_details.firewall.loadbalancer
+
+  git_repo = trimspace(chomp(var.git_repo))
 
   # loadbalancer_id = module.loadbalancer.loadbalancer_details.loadbalancer_id
   # bastion_id      = module.bastion.bastion_details.id
@@ -195,6 +200,8 @@ module "bastion" {
   cluster_subnet   = local.cluster_subnet
   cluster_endpoint = local.controlplane_vpc_ip
   firewall_id      = local.dmz_firewall_id
+  git_repo         = local.git_repo
+  devops_cd_sshkey = local.devops_cd_private_key
 }
 
 # ------------------------------------------------------------------------------

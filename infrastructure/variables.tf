@@ -62,6 +62,17 @@ variable "git_token" {
   }
 }
 
+## Git repository for deployment manifests
+variable "git_repo" {
+  description = "Git repository for deployment manifests"
+  type        = string
+
+  validation {
+    condition     = length(var.git_repo) > 0
+    error_message = "Git repository for deployment manifests must be provided."
+  }
+}
+
 ## Admin SSH Key Path (public)
 variable "sshkey_path" {
   description = "Path to the SSH keys for admin access (default: ~/.ssh/id_rsa.pub)"
@@ -71,6 +82,18 @@ variable "sshkey_path" {
   validation {
     condition     = fileexists(var.sshkey_path)
     error_message = "Path to the SSH keys must be provided. (default: ~/.ssh/id_rsa.pub)"
+  }
+}
+
+## Fluxcd SSH Key Path (public)
+variable "fluxcd_sshkey_path" {
+  description = "Path to the SSH keys for fluxcd access (default: ~/.ssh/devops_cd.pub)"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = fileexists(var.fluxcd_sshkey_path)
+    error_message = "Path to the SSH keys must be provided. (default: ~/.ssh/devops_cd.pub)"
   }
 }
 
