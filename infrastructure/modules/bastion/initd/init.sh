@@ -24,10 +24,12 @@ SSH_KEY_PATH="${SSH_KEY_PATH:-/tmp/devops_cd}"
 V_TALOSCTL=${V_TALOSCTL:-v1.11.2}
 V_KUBECTL=${V_KUBECTL:-v1.34.1}
 V_FLUXCD=${V_FLUXCD:-}
+V_GATEWAY_API=${V_GATEWAY_API:-v1.4.1}
 
 TALOSCTL_URL="${TALOSCTL_URL:-https://github.com/siderolabs/talos/releases/download/${V_TALOSCTL}}"
 KUBECTL_URL="${KUBECTL_URL:-https://dl.k8s.io/release/${V_KUBECTL}/bin/linux/amd64}"
 FLUXCD_URL="${FLUXCD_URL:-https://fluxcd.io/install.sh}"
+K8S_GATEWAY_API="${K8S_GATEWAY_API:-https://github.com/kubernetes-sigs/gateway-api/releases/download/${V_GATEWAY_API}/standard-install.yaml}"
 
 CLUSTER_NAME="${CLUSTER_NAME:-basecamp}"
 CLUSTER_SUBNET="${CLUSTER_SUBNET:-10.0.10.0/24}"
@@ -297,8 +299,15 @@ main() {
     talosctl health --nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config
     # kubectl get nodes -o wide
 
-    # Step 8: Bootstrap fluxCD for GitOps styled cluster resource management
+    # Step 8: Label worker nodes with node-role label
+    kubectl label nodes -l 'node-role.kubernetes.io/control-plane!=' node-role.kubernetes.io/worker=
+
+    # Step 9: Bootstrap fluxCD for GitOps styled cluster resource management
     bootstrap_fluxcd
+
+    # Step 10: Install Kubernetes Gateway API CRDs
+    log_info "Applying kubernetes Gateway API: version: ${V_GATEWAY_API}"
+    kubectl apply -f ${K8S_GATEWAY_API}
 
     # Success
     log_success "Bastion host setup completed successfully"

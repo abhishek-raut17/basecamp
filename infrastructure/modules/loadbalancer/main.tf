@@ -38,7 +38,7 @@ terraform {
 resource "linode_nodebalancer" "gateway_lb" {
   label                    = "${var.infra}-gateway-lb"
   region                   = var.region
-  client_conn_throttle     = 20
+  client_conn_throttle     = 10
   client_udp_sess_throttle = 20
 }
 
@@ -51,10 +51,6 @@ resource "linode_nodebalancer_config" "http" {
   port            = 80
   algorithm       = "roundrobin"
   stickiness      = "none"
-  check           = "connection"
-  check_interval  = 30
-  check_timeout   = 3
-  check_attempts  = 3
 }
 
 resource "linode_nodebalancer_config" "https" {
@@ -63,10 +59,6 @@ resource "linode_nodebalancer_config" "https" {
   port            = 443
   algorithm       = "roundrobin"
   stickiness      = "none"
-  check           = "connection"
-  check_interval  = 30
-  check_timeout   = 3
-  check_attempts  = 3
 }
 
 # FOR TESTING PURPOSES ONLY - COMMENT OUT FOR PRODUCTION USAGE
