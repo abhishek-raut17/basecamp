@@ -5,6 +5,8 @@
 set -euo pipefail
 
 declare -r INITD="/usr/local/bin/initd"
+declare -r IPHOST_REGEX='^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+declare -r SUBNET_REGEX='^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/([0-9]|[1-2][0-9]|3[0-2])$'
 
 # ----------------------------------------------------------------------------
 # Configuration (can be overridden via environment)
@@ -15,16 +17,19 @@ LOG_LEVEL=${LOG_LEVEL:-0}
 
 TALOS_DIR="${TALOS_DIR:-/root/.configs/.talos}"
 KUBE_DIR="${KUBE_DIR:-/root/.configs/.kube}"
+
 GIT_REPO="${GIT_REPO:-ssh://git@github.com/abhishek-raut17/basecamp.git}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-/tmp/devops_cd}"
 
 V_TALOSCTL=${V_TALOSCTL:-v1.11.2}
 V_KUBECTL=${V_KUBECTL:-v1.34.1}
 V_FLUXCD=${V_FLUXCD:-}
+
 TALOSCTL_URL="${TALOSCTL_URL:-https://github.com/siderolabs/talos/releases/download/${V_TALOSCTL}}"
 KUBECTL_URL="${KUBECTL_URL:-https://dl.k8s.io/release/${V_KUBECTL}/bin/linux/amd64}"
 FLUXCD_URL="${FLUXCD_URL:-https://fluxcd.io/install.sh}"
 
+CLUSTER_NAME="${CLUSTER_NAME:-basecamp}"
 CLUSTER_SUBNET="${CLUSTER_SUBNET:-10.0.10.0/24}"
 CLUSTER_ENDPOINT="${CLUSTER_ENDPOINT:-10.0.10.10}"
 
@@ -106,7 +111,7 @@ setup_talosctl() {
         log_error "Failed to set talos endpoint"
         exit 1
     fi
-    log_success "Talos nodes and endpoint configured"
+    log_info "Talos nodes and endpoint configured"
 }
 
 # ----------------------------------------------------------------------------
@@ -121,11 +126,11 @@ setup_kubectl() {
 # Bootstrap cluster nodes via bastion host using talosctl
 # ----------------------------------------------------------------------------
 bootstrap_cluster() {
-    if talosctl --nodes ${CLUSTER_ENDPOINT} --endpoints ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config etcd members >/dev/null 2>&1; then
+    log_info "Initializing bootstrap process for talos nodes"
+    if timeout 5 talosctl --nodes ${CLUSTER_ENDPOINT} --endpoints ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config etcd members >/dev/null 2>&1; then
         log_warn "Cluster already bootstrap at endpoint: ${CLUSTER_ENDPOINT}"
     else
-        log_info "Initializing bootstrap process for talos nodes"
-        if talosctl bootstrap --nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config; then
+        if timeout 5 talosctl bootstrap --nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config; then
             log_success "Cluster at endpoint: ${CLUSTER_ENDPOINT} bootstrapped successfully"
             log_debug "Sleeping for 10s waiting for cluster to bootup"
             sleep 10 # needed due to slow bootup speeds of ec2 instances
@@ -159,7 +164,7 @@ bootstrap_fluxcd() {
             --private-key-file=${SSH_KEY_PATH} \
             --author-name="Flux Bot" \
             --author-email="flux-bot@sigdep.cloud" \
-            --path=clusters/production \
+            --path=clusters/${CLUSTER_NAME}-0 \
             --silent
     fi
 }
@@ -172,47 +177,82 @@ usage() {
 Usage: ${0##*/} [OPTIONS]
 
 Options:
+  --cluster-name <name>         Cluster name (default: ${CLUSTER_NAME})
+  --cluster-endpoint <host>     Cluster endpoint (default: ${CLUSTER_ENDPOINT})
+  --cluster-subnet <cidr>       Cluster subnet (default: ${CLUSTER_SUBNET})
   --talos-dir <path>            Path for talos configs (default: ${TALOS_DIR})
   --kube-dir <path>             Path for kube configs (default: ${KUBE_DIR})
-  --talos-version <string>      URL to download talosctl (default: ${TALOSCTL_URL})
-  --kube-version <string>       URL to download kubectl (default: ${KUBECTL_URL})
-  --cluster-subnet <cidr>       Cluster subnet (default: ${CLUSTER_SUBNET})
-  --cluster-endpoint <host>     Cluster endpoint (default: ${CLUSTER_ENDPOINT})
+  --sshkey-path <path>          SSH key path (default: ${SSH_KEY_PATH})
+  --talos-version <version>     Talos version (default: ${V_TALOSCTL})
+  --kube-version <version>      Kubectl version (default: ${V_KUBECTL})
+  --fluxcd-version <version>    FluxCD version (default: ${V_FLUXCD})
+  --git-repo <url>              Git repository URL (default: ${GIT_REPO})
   -h, --help                    Show this help message
 
 Examples:
-  ${0##*/} --cluster-endpoint 10.0.10.10 --cluster-subnet 10.0.10.0/24
+  ${0##*/} --cluster-name basecamp --cluster-endpoint 10.0.10.10 --cluster-subnet 10.0.10.0/24
 
 EOF
+}
+
+validate_arg() {
+    local name="$1"
+    local value="$2"
+
+    case "$1" in
+        --cluster-name)
+            if [[ -z "$value" ]]; then
+                log_warn "Cluster name not provided. Using default: ${CLUSTER_NAME}"
+            fi
+            break;;
+        --cluster-endpoint)
+            if [[ -z "$value" ]]; then
+                log_warn "Cluster endpoint not provided. Using default: ${CLUSTER_ENDPOINT}"
+            fi
+            if ! [[ $value =~ $IPHOST_REGEX ]]; then
+                log_warn "Cluster endpoint not in proper ipv4 host format. Ref default: ${CLUSTER_ENDPOINT}"
+            fi
+            break;;
+        --cluster-subnet)
+            if [[ -z "$value" ]]; then
+                log_warn "Cluster subnet not provided. Using default: ${CLUSTER_SUBNET}"
+            fi
+            if ! [[ $value =~ $SUBNET_REGEX ]]; then
+                log_warn "Cluster subnet not in proper ipv4 subnet format. Ref default: ${CLUSTER_SUBNET}"
+            fi
+            break;;
+    esac
 }
 
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --sshkey-path)
-                SSH_KEY_PATH="$2"; shift 2;;
+            --cluster-name)
+                CLUSTER_NAME="$2"; shift 2; validate_arg "$1" "$2";;
             --cluster-endpoint)
-                CLUSTER_ENDPOINT="$2"; shift 2;;
+                CLUSTER_ENDPOINT="$2"; shift 2; validate_arg "$1" "$2";;
             --cluster-subnet)
-                CLUSTER_SUBNET="$2"; shift 2;;
+                CLUSTER_SUBNET="$2"; shift 2; validate_arg "$1" "$2";;
             --talos-dir)
                 TALOS_DIR="$2"; shift 2;;
             --kube-dir)
                 KUBE_DIR="$2"; shift 2;;
-            --git-repo)
-                GIT_REPO="$2"; shift 2;;
+            --sshkey-path)
+                SSH_KEY_PATH="$2"; shift 2;;
             --talos-version)
                 V_TALOSCTL="$2"; shift 2;;
             --kube-version)
                 V_KUBECTL="$2"; shift 2;;
             --fluxcd-version)
                 V_FLUXCD="$2"; shift 2;;
+            --git-repo)
+                GIT_REPO="$2"; shift 2;;
             -h|--help)
                 usage; exit 0;;
             --)
                 shift; break;;
             *)
-                echo "Unknown option: $1" >&2; usage; exit 2;;
+                log_debug "Unknown argument: $1" >&2; usage; exit 2;;
         esac
     done
 }
