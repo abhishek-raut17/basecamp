@@ -4,4 +4,3 @@ resources:
 - flux-system
 - security
 - ingress
-- dashboard
