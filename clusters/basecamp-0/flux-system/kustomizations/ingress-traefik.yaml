@@ -15,6 +15,6 @@ spec:
   healthChecks:
     - apiVersion: apps/v1
       kind: Deployment
-      name: traefik
-      namespace: ingress
+      name: cert-manager
+      namespace: security
   timeout: 15m
