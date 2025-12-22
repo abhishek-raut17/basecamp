@@ -17,4 +17,4 @@ spec:
       kind: Deployment
       name: cert-manager
       namespace: security
-  timeout: 5m
+  timeout: 15m

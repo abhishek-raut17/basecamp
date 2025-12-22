@@ -9,7 +9,7 @@ spec:
     kind: OCIRepository
     name: cert-manager
     namespace: flux-system
-  
+
   # Install configuration
   install:
     crds: Create

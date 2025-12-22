@@ -17,4 +17,4 @@ spec:
       kind: Deployment
       name: traefik
       namespace: ingress
-  timeout: 5m
+  timeout: 15m
