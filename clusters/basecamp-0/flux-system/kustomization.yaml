@@ -4,3 +4,7 @@ resources:
 - gotk-components.yaml
 - gotk-sync.yaml
 - sources
+- kustomizations/security-cert-manager.yaml
+- kustomizations/security-cluster-issuer.yaml
+- kustomizations/ingress-traefik.yaml
+

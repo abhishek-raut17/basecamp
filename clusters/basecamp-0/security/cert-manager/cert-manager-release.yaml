@@ -27,7 +27,7 @@ spec:
     # Install CRDs as part of the Helm release
     crds:
       enabled: true
-      keep: false
+      keep: true
     
     # Override namespace for ClusterIssuer resources
     # This allows ClusterIssuers to reference secrets in the security namespace
