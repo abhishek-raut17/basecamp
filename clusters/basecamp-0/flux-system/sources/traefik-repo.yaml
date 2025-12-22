@@ -6,5 +6,8 @@ metadata:
 spec:
   interval: 24h
   url: oci://ghcr.io/traefik/helm/traefik
+  layerSelector:
+    mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+    operation: copy
   ref:
     semver: "38.0.0"
