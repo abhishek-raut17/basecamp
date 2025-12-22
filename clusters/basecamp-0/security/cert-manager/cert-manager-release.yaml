@@ -12,7 +12,7 @@ spec:
   
   # Install configuration
   install:
-    crds: CreateReplace
+    crds: Create
     remediation:
       retries: 3
   
@@ -200,17 +200,6 @@ spec:
           drop:
             - ALL
         readOnlyRootFilesystem: true
-    
-    # ===== Prometheus Monitoring =====
-    prometheus:
-      enabled: true
-      servicemonitor:
-        enabled: true
-        prometheusInstance: default
-        interval: 60s
-        scrapeTimeout: 30s
-        labels:
-          prometheus: kube-prometheus
     
     # ===== Feature Gates =====
     # Enable Gateway API support for Traefik
