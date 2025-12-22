@@ -138,22 +138,7 @@ spec:
       
       # Network policy for webhook (optional)
       networkPolicy:
-        enabled: true
-        ingress:
-          - from:
-              - namespaceSelector: {}
-        egress:
-          - ports:
-              - port: 443
-                protocol: TCP
-              - port: 6443
-                protocol: TCP
-              - port: 53
-                protocol: TCP
-              - port: 53
-                protocol: UDP
-            to:
-              - namespaceSelector: {}
+        enabled: false
       
       # Namespace selector to exclude certain namespaces from validation
       validatingWebhookConfiguration:

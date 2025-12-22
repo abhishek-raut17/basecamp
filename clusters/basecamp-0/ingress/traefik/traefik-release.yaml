@@ -155,5 +155,5 @@ spec:
       - --entryPoints.websecure.proxyProtocol.insecure=false
       - --entryPoints.web.forwardedHeaders.insecure=false
       - --entryPoints.websecure.forwardedHeaders.insecure=false
-      - --entryPoints.web.transport.respondingTimeouts.idleTimeout=180s
-      - --entryPoints.websecure.transport.respondingTimeouts.idleTimeout=180s
+      - --entryPoints.web.transport.respondingTimeouts.idleTimeout=300s
+      - --entryPoints.websecure.transport.respondingTimeouts.idleTimeout=300s
