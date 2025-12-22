@@ -1,0 +1,159 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: traefik-system
+spec:
+  interval: 12h
+  chartRef:
+    kind: OCIRepository
+    name: traefik
+    namespace: flux-system
+
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+
+  values:
+    # Deploy as DaemonSet on worker nodes only
+    deployment:
+      kind: DaemonSet
+      replicas: 1  # Ignored for DaemonSet, but good to document
+    
+    # Node selection - only worker nodes
+    nodeSelector:
+      node-role.kubernetes.io/worker: ""
+    
+    # Prevent scheduling on control-plane nodes
+    tolerations: []
+    
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist
+    
+    # Enable Gateway API support ONLY
+    providers:
+      kubernetesGateway:
+        enabled: true
+        # Watch all namespaces for Gateway resources
+        namespaces: []
+      kubernetesIngress:
+        enabled: false  # Disable legacy Ingress support
+    
+    # Ports configuration with hostPort for Linode NodeBalancer
+    ports:
+      web:
+        port: 8000          # Container port (Traefik process listens here)
+        exposedPort: 80     # Service port (for internal cluster access)
+        hostPort: 80        # Node port (NodeBalancer → this → container:8000)
+        protocol: TCP
+        # IMPORTANT: Client IP preservation for rate limiting, logging, geo-location
+        proxyProtocol:
+          trustedIPs:
+            - 10.0.0.0/8        # Linode private network (NodeBalancer IPs)
+            - 172.16.0.0/12     # Docker bridge networks
+            - 192.168.0.0/16    # Local networks
+        forwardedHeaders:
+          trustedIPs:
+            - 10.0.0.0/8        # Linode private network
+            - 172.16.0.0/12     # Docker bridge networks
+            - 192.168.0.0/16    # Local networks
+      websecure:
+        port: 8443          # Container port (Traefik process listens here)
+        exposedPort: 443    # Service port (for internal cluster access)
+        hostPort: 443       # Node port (NodeBalancer → this → container:8443)
+        protocol: TCP
+        http3:
+          enabled: true     # Enable HTTP/3 (QUIC) support
+        proxyProtocol:
+          trustedIPs:
+            - 10.0.0.0/8        # Linode private network (NodeBalancer IPs)
+            - 172.16.0.0/12     # Docker bridge networks
+            - 192.168.0.0/16    # Local networks
+        forwardedHeaders:
+          trustedIPs:
+            - 10.0.0.0/8        # Linode private network
+            - 172.16.0.0/12     # Docker bridge networks
+            - 192.168.0.0/16    # Local networks
+      metrics:
+        port: 9100
+        expose: false       # Don't expose metrics externally
+        protocol: TCP
+    
+    # Service configuration - ClusterIP since we use hostPort
+    service:
+      enabled: true
+      type: ClusterIP
+    
+    # Do NOT use hostNetwork - we explicitly use hostPort only
+    hostNetwork: false
+    
+    # Prometheus metrics
+    metrics:
+      prometheus:
+        enabled: true
+        addEntryPointsLabels: true
+        addRoutersLabels: true
+        addServicesLabels: true
+    
+    # Logging configuration
+    logs:
+      general:
+        level: INFO
+      access:
+        enabled: true
+        format: json
+        fields:
+          headers:
+            defaultMode: keep
+            names:
+              X-Forwarded-For: keep
+              X-Real-Ip: keep
+    
+    # Resource limits
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 1000m
+        memory: 512Mi
+    
+    # Security context
+    securityContext:
+      capabilities:
+        drop: [ALL]
+        add: [NET_BIND_SERVICE]  # Required for binding to ports < 1024
+      readOnlyRootFilesystem: true
+      runAsGroup: 65532
+      runAsNonRoot: true
+      runAsUser: 65532
+    
+    podSecurityContext:
+      fsGroup: 65532
+      fsGroupChangePolicy: "OnRootMismatch"
+    
+    # Disable Traefik dashboard
+    ingressRoute:
+      dashboard:
+        enabled: false
+    
+    # Additional Traefik arguments
+    additionalArguments:
+      - --api.insecure=false
+      - --api.dashboard=false
+      - --entryPoints.web.proxyProtocol.insecure=false
+      - --entryPoints.websecure.proxyProtocol.insecure=false
+      - --entryPoints.web.forwardedHeaders.insecure=false
+      - --entryPoints.websecure.forwardedHeaders.insecure=false
+      - --entryPoints.web.transport.respondingTimeouts.idleTimeout=180s
+      - --entryPoints.websecure.transport.respondingTimeouts.idleTimeout=180s
