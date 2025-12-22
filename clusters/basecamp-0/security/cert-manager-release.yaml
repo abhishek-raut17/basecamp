@@ -85,13 +85,12 @@ spec:
           - ALL
       readOnlyRootFilesystem: true
     
-    # Node selector (optional - uncomment if needed)
-    # nodeSelector:
-    #   node-role.kubernetes.io/control-plane: ""
+    nodeSelector:
+      node-role.kubernetes.io/worker: ""
     
     # Tolerations (optional - uncomment if needed)
     # tolerations:
-    #   - key: node-role.kubernetes.io/control-plane
+    #   - key: node-role.kubernetes.io/worker
     #     operator: Exists
     #     effect: NoSchedule
     
