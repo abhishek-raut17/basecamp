@@ -258,39 +258,39 @@ resource "linode_firewall_device" "wkr_node_fw_device" {
 # ------------------------------------------------------------------------------
 # Configure nodebalancer backend nodes
 # ------------------------------------------------------------------------------
-# resource "linode_nodebalancer_node" "http_nodes" {
-#   depends_on = [
-#     linode_instance.control_plane,
-#     linode_instance.worker,
-#     data.linode_instance_networking.cp_network,
-#     data.linode_instance_networking.wkr_network
-#   ]
+resource "linode_nodebalancer_node" "http_nodes" {
+  depends_on = [
+    linode_instance.control_plane,
+    linode_instance.worker,
+    data.linode_instance_networking.cp_network,
+    data.linode_instance_networking.wkr_network
+  ]
 
-#   count           = length(var.workers_ip)
-#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
-#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "http"][0]
-#   address         = "${local.workers_private_ips[count.index]}:80"
-#   label           = "${var.infra}-${count.index}-http-port-lb"
-#   weight          = 100
-#   mode            = "accept"
-# }
+  count           = length(var.workers_ip)
+  nodebalancer_id = var.gateway_nodebalancer.gateway.id
+  config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "http"][0]
+  address         = "${local.workers_private_ips[count.index]}:80"
+  label           = "${var.infra}-${count.index}-http-port-lb"
+  weight          = 100
+  mode            = "accept"
+}
 
-# resource "linode_nodebalancer_node" "https_nodes" {
-#   depends_on = [
-#     linode_instance.control_plane,
-#     linode_instance.worker,
-#     data.linode_instance_networking.cp_network,
-#     data.linode_instance_networking.wkr_network
-#   ]
+resource "linode_nodebalancer_node" "https_nodes" {
+  depends_on = [
+    linode_instance.control_plane,
+    linode_instance.worker,
+    data.linode_instance_networking.cp_network,
+    data.linode_instance_networking.wkr_network
+  ]
 
-#   count           = length(var.workers_ip)
-#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
-#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "https"][0]
-#   address         = "${local.workers_private_ips[count.index]}:443"
-#   label           = "${var.infra}-${count.index}-https-port-lb"
-#   weight          = 100
-#   mode            = "accept"
-# }
+  count           = length(var.workers_ip)
+  nodebalancer_id = var.gateway_nodebalancer.gateway.id
+  config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "https"][0]
+  address         = "${local.workers_private_ips[count.index]}:443"
+  label           = "${var.infra}-${count.index}-https-port-lb"
+  weight          = 100
+  mode            = "accept"
+}
 
 # FOR TESTING PURPOSES ONLY - COMMENT OUT FOR PRODUCTION USAGE
 #

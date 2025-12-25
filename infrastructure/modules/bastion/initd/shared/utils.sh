@@ -236,3 +236,17 @@ delete_file() {
 }
 
 # ------------------------------------------------------------------------------
+# Kubernetes: check if the resource exists in cluster
+# ------------------------------------------------------------------------------
+resource_exists() {
+    local resource_type=$1
+    local resource_name=$2
+    
+    if kubectl get "$resource_type" -A | grep "$resource_name" &>/dev/null; then
+        return 0  # exists
+    else
+        return 1  # doesn't exist
+    fi
+}
+
+# ------------------------------------------------------------------------------

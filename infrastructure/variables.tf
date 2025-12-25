@@ -42,7 +42,7 @@ variable "region" {
 variable "linode_token" {
   description = "Linode API Token"
   type        = string
-  sensitive   = true
+  sensitive   = false
 
   validation {
     condition     = length(var.linode_token) > 0

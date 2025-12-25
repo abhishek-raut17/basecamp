@@ -202,6 +202,7 @@ module "bastion" {
   firewall_id      = local.dmz_firewall_id
   git_repo         = local.git_repo
   devops_cd_sshkey = local.devops_cd_private_key
+  token            = local.token
 }
 
 # ------------------------------------------------------------------------------
