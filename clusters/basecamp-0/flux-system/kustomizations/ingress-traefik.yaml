@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m0s
-  path: ./clusters/basecamp-0/ingress/traefik
+  path: ./clusters/basecamp-0/ingress
   prune: true
   sourceRef:
     kind: GitRepository
@@ -13,9 +13,4 @@ spec:
   dependsOn:
     - name: security-cert-manager
     - name: security-cluster-issuer
-  healthChecks:
-    - apiVersion: apps/v1
-      kind: Daemonset
-      name: traefik
-      namespace: ingress
   timeout: 15m
