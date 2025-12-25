@@ -48,7 +48,10 @@ spec:
         namespaces: []
       kubernetesIngress:
         enabled: false  # Disable legacy Ingress support
-    
+
+    gateway:
+      enabled: false # Disable default gateway creation
+
     # Ports configuration with hostPort for Linode NodeBalancer
     ports:
       web:
