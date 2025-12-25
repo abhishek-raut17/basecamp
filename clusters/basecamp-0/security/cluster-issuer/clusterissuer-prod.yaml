@@ -15,5 +15,5 @@ spec:
             groupName: acme.slicen.me
             config:
               apiTokenSecretRef:
-                name: admin-cred-token
+                name: linode-credentials
                 key: token
