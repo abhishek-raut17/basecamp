@@ -153,3 +153,5 @@ spec:
       - --entryPoints.websecure.forwardedHeaders.insecure=false
       - --entryPoints.web.transport.respondingTimeouts.idleTimeout=300s
       - --entryPoints.websecure.transport.respondingTimeouts.idleTimeout=300s
+      - --experimental.kubernetesgateway=true
+      - --providers.kubernetesgateway.experimentalchannel=true
