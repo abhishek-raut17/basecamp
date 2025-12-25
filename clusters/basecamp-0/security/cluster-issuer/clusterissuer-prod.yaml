@@ -9,9 +9,11 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
     solvers:
-      - http01:
-          gatewayHTTPRoute:
-            parentRefs:
-              - name: external-gateway
-                namespace: ingress
-                kind: Gateway
+      - dns01:
+          webhook:
+            solverName: linode
+            groupName: acme.slicen.me
+            config:
+              apiTokenSecretRef:
+                name: admin-cred-token
+                key: token

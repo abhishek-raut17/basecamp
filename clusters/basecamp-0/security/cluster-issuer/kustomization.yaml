@@ -3,4 +3,3 @@ kind: Kustomization
 resources:
 - clusterissuer-dev.yaml
 - clusterissuer-prod.yaml
-- gateway-cert.yaml
