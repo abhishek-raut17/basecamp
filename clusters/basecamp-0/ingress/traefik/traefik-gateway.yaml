@@ -16,43 +16,15 @@ spec:
       namespaces:
         from: All
 
-  - name: https-dashboard
+  - name: https
     protocol: HTTPS
     port: 443
-    hostname: "dashboard.sigdep.cloud"
+    hostname: "*.sigdep.cloud"
     tls:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: dashboard-ingress-gateway-cert
-        namespace: ingress
-    allowedRoutes:
-      namespaces:
-        from: All
-
-  - name: https-drive
-    protocol: HTTPS
-    port: 443
-    hostname: "drive.sigdep.cloud"
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - kind: Secret
-        name: drive-ingress-gateway-cert
-        namespace: ingress
-    allowedRoutes:
-      namespaces:
-        from: All
-
-  - name: https-app
-    protocol: HTTPS
-    port: 443
-    hostname: "app.sigdep.cloud"
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - kind: Secret
-        name: app-ingress-gateway-cert
+        name: ingress-gateway-tls
         namespace: ingress
     allowedRoutes:
       namespaces:
