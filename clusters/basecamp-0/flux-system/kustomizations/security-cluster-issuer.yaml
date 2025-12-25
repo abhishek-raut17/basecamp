@@ -13,8 +13,11 @@ spec:
   dependsOn:
     - name: security-cert-manager
   healthChecks:
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: cert-manager
-      namespace: security
+    - apiVersion: cert-manager.io/v1
+      kind: ClusterIssuer
+      name: letsencrypt-dev
+    - apiVersion: cert-manager.io/v1
+      kind: Certificate
+      name: ingress-gateway-cert
+      namespace: ingress
   timeout: 15m
