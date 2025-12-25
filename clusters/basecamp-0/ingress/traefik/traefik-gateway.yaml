@@ -24,7 +24,7 @@ spec:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: external-gateway-tls
+        name: external-gateway-cert
         namespace: ingress
     allowedRoutes:
       namespaces:
