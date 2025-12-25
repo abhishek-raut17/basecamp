@@ -1,0 +1,22 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: dashboard-headlamp
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  path: ./clusters/basecamp-0/dashboard
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: security-cert-manager
+    - name: security-cluster-issuer
+    - name: ingress-traefik
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: headlamp
+      namespace: dashboard
+  timeout: 15m

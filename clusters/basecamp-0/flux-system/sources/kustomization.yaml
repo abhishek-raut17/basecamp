@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
 - cert-manager-repo.yaml
 - traefik-repo.yaml
+- headlamp-repo.yaml
