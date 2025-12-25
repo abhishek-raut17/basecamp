@@ -335,6 +335,13 @@ main() {
     if ! resource_exists "namespace" "security"; then
         kubectl create namespace security --dry-run=client -o yaml | kubectl apply -f -
     fi
+
+    # Step 12: Generate secrets to edit DNS zone file for DNS-01 challenges
+    log_info "Generating DNS provider API token secrets"
+    kubectl create secret generic linode-credentials --namespace=security --from-literal=token=${ADMIN_TOKEN} \
+        --dry-run=client -o yaml | kubectl apply -f -
+
+    # Step 13: Deploy webhook plugin for cert-manager for linode DNS provider
     if ! resource_exists "deploy" "cert-manager-webhook-linode"; then
         helm install cert-manager-webhook-linode \
             --namespace=security \
@@ -342,11 +349,6 @@ main() {
             --set deployment.logLevel=null \
             ${CERT_MNG_PLUGIN}
     fi
-
-    # Step 12: Generate secrets to edit DNS zone file for DNS-01 challenges
-    log_info "Generating DNS provider API token secrets"
-    kubectl create secret generic admin-cred-token --namespace=security --from-literal=token=${ADMIN_TOKEN} \
-        --dry-run=client -o yaml | kubectl apply -f -
 
     # Success
     log_success "Bastion host setup completed successfully"

@@ -241,9 +241,8 @@ delete_file() {
 resource_exists() {
     local resource_type=$1
     local resource_name=$2
-    local namespace=${3:-default}
     
-    if kubectl get "$resource_type" "$resource_name" -n "$namespace" &>/dev/null; then
+    if kubectl get "$resource_type" -A | grep "$resource_name" &>/dev/null; then
         return 0  # exists
     else
         return 1  # doesn't exist
