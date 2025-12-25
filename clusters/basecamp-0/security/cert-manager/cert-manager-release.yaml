@@ -5,6 +5,7 @@ metadata:
   namespace: security
 spec:
   interval: 12h
+  timeout: 10m
   chartRef:
     kind: OCIRepository
     name: cert-manager
@@ -15,6 +16,7 @@ spec:
     crds: Create
     remediation:
       retries: 3
+    timeout: 10m
   
   # Upgrade configuration
   upgrade:
@@ -22,6 +24,7 @@ spec:
     remediation:
       retries: 3
       remediateLastFailure: true
+    timeout: 10m
   
   values:
     # Install CRDs as part of the Helm release
