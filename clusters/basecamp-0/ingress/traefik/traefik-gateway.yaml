@@ -5,6 +5,7 @@ metadata:
   namespace: ingress
   annotations:
     traefik.io/entrypoints: web,websecure
+    cert-manager.io/cluster-issuer: letsencrypt-dev
 spec:
   gatewayClassName: traefik
   listeners:
@@ -23,7 +24,7 @@ spec:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: ingress-gateway-cert
+        name: dashboard-ingress-gateway-cert
         namespace: ingress
     allowedRoutes:
       namespaces:
@@ -37,7 +38,7 @@ spec:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: ingress-gateway-cert
+        name: drive-ingress-gateway-cert
         namespace: ingress
     allowedRoutes:
       namespaces:
@@ -51,7 +52,7 @@ spec:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: ingress-gateway-cert
+        name: app-ingress-gateway-cert
         namespace: ingress
     allowedRoutes:
       namespaces:

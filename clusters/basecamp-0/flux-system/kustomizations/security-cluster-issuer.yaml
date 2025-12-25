@@ -16,8 +16,4 @@ spec:
     - apiVersion: cert-manager.io/v1
       kind: ClusterIssuer
       name: letsencrypt-dev
-    - apiVersion: cert-manager.io/v1
-      kind: Certificate
-      name: ingress-gateway-cert
-      namespace: ingress
   timeout: 15m
