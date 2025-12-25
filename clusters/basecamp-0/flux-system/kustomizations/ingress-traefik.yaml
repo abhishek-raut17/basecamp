@@ -15,7 +15,7 @@ spec:
     - name: security-cluster-issuer
   healthChecks:
     - apiVersion: apps/v1
-      kind: Deployment
+      kind: Daemonset
       name: traefik
       namespace: ingress
   timeout: 15m
