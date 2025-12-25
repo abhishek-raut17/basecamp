@@ -5,6 +5,7 @@ metadata:
   namespace: ingress
 spec:
   interval: 12h
+  timeout: 10m
   chartRef:
     kind: OCIRepository
     name: traefik
@@ -14,10 +15,12 @@ spec:
     crds: Create
     remediation:
       retries: 3
+    timeout: 10m
   upgrade:
     crds: CreateReplace
     remediation:
       retries: 3
+    timeout: 10m
 
   values:
     # Deploy as DaemonSet on worker nodes only
