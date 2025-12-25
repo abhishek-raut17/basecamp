@@ -4,7 +4,6 @@ metadata:
   name: external-gateway
   namespace: ingress
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-dev
     traefik.io/entrypoints: web,websecure
 spec:
   gatewayClassName: traefik
@@ -16,15 +15,43 @@ spec:
       namespaces:
         from: All
 
-  - name: https
+  - name: https-dashboard
     protocol: HTTPS
     port: 443
-    hostname: "*.sigdep.cloud"
+    hostname: "dashboard.sigdep.cloud"
     tls:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: external-gateway-cert
+        name: ingress-gateway-cert
+        namespace: ingress
+    allowedRoutes:
+      namespaces:
+        from: All
+
+  - name: https-drive
+    protocol: HTTPS
+    port: 443
+    hostname: "drive.sigdep.cloud"
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: ingress-gateway-cert
+        namespace: ingress
+    allowedRoutes:
+      namespaces:
+        from: All
+
+  - name: https-app
+    protocol: HTTPS
+    port: 443
+    hostname: "app.sigdep.cloud"
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: ingress-gateway-cert
         namespace: ingress
     allowedRoutes:
       namespaces:

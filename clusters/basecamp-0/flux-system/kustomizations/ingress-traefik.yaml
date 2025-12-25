@@ -12,9 +12,10 @@ spec:
     name: flux-system
   dependsOn:
     - name: security-cert-manager
+    - name: security-cluster-issuer
   healthChecks:
     - apiVersion: apps/v1
       kind: Deployment
-      name: cert-manager
-      namespace: security
+      name: traefik
+      namespace: ingress
   timeout: 15m
