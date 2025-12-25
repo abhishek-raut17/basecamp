@@ -7,3 +7,4 @@ resources:
 - kustomizations/security-cert-manager.yaml
 - kustomizations/security-cluster-issuer.yaml
 - kustomizations/ingress-traefik.yaml
+- kustomizations/dashboard-headlamp.yaml
