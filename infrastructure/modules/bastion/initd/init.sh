@@ -20,16 +20,20 @@ KUBE_DIR="${KUBE_DIR:-/root/.configs/.kube}"
 
 GIT_REPO="${GIT_REPO:-ssh://git@github.com/abhishek-raut17/basecamp.git}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-/tmp/devops_cd}"
+ADMIN_TOKEN="${ADMIN_TOKEN:-}"
 
 V_TALOSCTL=${V_TALOSCTL:-v1.11.2}
 V_KUBECTL=${V_KUBECTL:-v1.34.1}
 V_FLUXCD=${V_FLUXCD:-}
+V_HELM=${V_HELM:-}
 V_GATEWAY_API=${V_GATEWAY_API:-v1.4.1}
 
 TALOSCTL_URL="${TALOSCTL_URL:-https://github.com/siderolabs/talos/releases/download/${V_TALOSCTL}}"
 KUBECTL_URL="${KUBECTL_URL:-https://dl.k8s.io/release/${V_KUBECTL}/bin/linux/amd64}"
 FLUXCD_URL="${FLUXCD_URL:-https://fluxcd.io/install.sh}"
+HELM_URL="${HELM_URL:-https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4}"
 K8S_GATEWAY_API="${K8S_GATEWAY_API:-https://github.com/kubernetes-sigs/gateway-api/releases/download/${V_GATEWAY_API}/standard-install.yaml}"
+CERT_MNG_PLUGIN="${CERT_MNG_PLUGIN:-https://github.com/slicen/cert-manager-webhook-linode/releases/download/v0.2.0/cert-manager-webhook-linode-v0.2.0.tgz}"
 
 CLUSTER_NAME="${CLUSTER_NAME:-basecamp}"
 CLUSTER_SUBNET="${CLUSTER_SUBNET:-10.0.10.0/24}"
@@ -48,6 +52,7 @@ provision_prerequisites() {
     local talos_url="${1:-${TALOSCTL_URL}}"
     local kube_url="${2:-${KUBECTL_URL}}"
     local flux_url="${3:-${FLUXCD_URL}}"
+    local helm_url="${3:-${HELM_URL}}"
 
     log_info "Provisioning prerequisites"
 
@@ -58,7 +63,7 @@ provision_prerequisites() {
     install_bin "kubectl" "kubectl.sha256" "$kube_url"
 
     # Install Helm
-    # install_tool "helm" "$helm_url"
+    install_tool "helm" "$helm_url"
 
     # Install FluCD
     install_tool "flux" "$flux_url"
@@ -188,11 +193,13 @@ Options:
   --talos-version <version>     Talos version (default: ${V_TALOSCTL})
   --kube-version <version>      Kubectl version (default: ${V_KUBECTL})
   --fluxcd-version <version>    FluxCD version (default: ${V_FLUXCD})
+  --helm-version <version>      Helm version (default: ${V_HELM})
   --git-repo <url>              Git repository URL (default: ${GIT_REPO})
+  --admin-token <token>         Admin token for DNS provider challenges
   -h, --help                    Show this help message
 
 Examples:
-  ${0##*/} --cluster-name basecamp --cluster-endpoint 10.0.10.10 --cluster-subnet 10.0.10.0/24
+  ${0##*/} --cluster-name basecamp --cluster-endpoint 10.0.10.10 --cluster-subnet 10.0.10.0/24 --admin-token <token>
 
 EOF
 }
@@ -202,6 +209,11 @@ validate_arg() {
     local value="$2"
 
     case "$1" in
+        --admin-token)
+            if [[ -z "$value" ]]; then
+                log_warn "Admin token not provided. Please retry with valid admin token"
+            fi
+            break;;
         --cluster-name)
             if [[ -z "$value" ]]; then
                 log_warn "Cluster name not provided. Using default: ${CLUSTER_NAME}"
@@ -230,11 +242,13 @@ parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --cluster-name)
-                CLUSTER_NAME="$2"; shift 2; validate_arg "$1" "$2";;
+                CLUSTER_NAME="$2"; shift 2;;
             --cluster-endpoint)
-                CLUSTER_ENDPOINT="$2"; shift 2; validate_arg "$1" "$2";;
+                CLUSTER_ENDPOINT="$2"; shift 2;;
             --cluster-subnet)
-                CLUSTER_SUBNET="$2"; shift 2; validate_arg "$1" "$2";;
+                CLUSTER_SUBNET="$2"; shift 2;;
+            --admin-token)
+                ADMIN_TOKEN="$2"; shift 2;;
             --talos-dir)
                 TALOS_DIR="$2"; shift 2;;
             --kube-dir)
@@ -247,6 +261,8 @@ parse_args() {
                 V_KUBECTL="$2"; shift 2;;
             --fluxcd-version)
                 V_FLUXCD="$2"; shift 2;;
+            --helm-version)
+                V_HELM="$2"; shift 2;;
             --git-repo)
                 GIT_REPO="$2"; shift 2;;
             -h|--help)
@@ -269,6 +285,11 @@ main() {
 
     # Parse command-line arguments to allow inline overrides
     parse_args "$@"
+
+    if [[ -z $ADMIN_TOKEN ]]; then
+        log_error "fatal error: No Admin token provided."
+        exit 1
+    fi
 
     # Display banner
     log_section "Setup machine configs for cluster nodes"
@@ -302,12 +323,30 @@ main() {
     # Step 8: Label worker nodes with node-role label
     kubectl label nodes -l 'node-role.kubernetes.io/control-plane!=' node-role.kubernetes.io/worker=
 
-    # Step 9: Bootstrap fluxCD for GitOps styled cluster resource management
+    # Step 11: Bootstrap fluxCD for GitOps styled cluster resource management
     bootstrap_fluxcd
 
     # Step 10: Install Kubernetes Gateway API CRDs
     log_info "Applying kubernetes Gateway API: version: ${V_GATEWAY_API}"
     kubectl apply -f ${K8S_GATEWAY_API}
+
+    # Step 11: Install Cert-manager-linode plugin
+    log_info "Applying cert-manager-webhook"
+    if ! resource_exists "namespace" "security"; then
+        kubectl create namespace security --dry-run=client -o yaml | kubectl apply -f -
+    fi
+    if ! resource_exists "deploy" "cert-manager-webhook-linode"; then
+        helm install cert-manager-webhook-linode \
+            --namespace=security \
+            --set certManager.namespace=security \
+            --set deployment.logLevel=null \
+            ${CERT_MNG_PLUGIN}
+    fi
+
+    # Step 12: Generate secrets to edit DNS zone file for DNS-01 challenges
+    log_info "Generating DNS provider API token secrets"
+    kubectl create secret generic admin-cred-token --namespace=security --from-literal=token=${ADMIN_TOKEN} \
+        --dry-run=client -o yaml | kubectl apply -f -
 
     # Success
     log_success "Bastion host setup completed successfully"

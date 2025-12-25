@@ -154,7 +154,7 @@ resource "terraform_data" "setup_bastion" {
   # Step 5: Run initd script to setup bastion for cluster access
   provisioner "remote-exec" {
     inline = [
-      "/usr/local/bin/initd/init.sh --cluster-name ${var.infra} --cluster-endpoint ${var.cluster_endpoint} --cluster-subnet ${var.cluster_subnet} --git-repo ${var.git_repo} --sshkey-path /tmp/devops_cd"
+      "/usr/local/bin/initd/init.sh --admin-token ${var.token} --cluster-name ${var.infra} --cluster-endpoint ${var.cluster_endpoint} --cluster-subnet ${var.cluster_subnet} --git-repo ${var.git_repo} --sshkey-path /tmp/devops_cd"
     ]
   }
 }
