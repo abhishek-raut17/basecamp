@@ -5,6 +5,7 @@ metadata:
   namespace: ingress
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-dev
+    traefik.io/entrypoints: web,websecure
 spec:
   gatewayClassName: traefik
   listeners:
@@ -15,15 +16,15 @@ spec:
       namespaces:
         from: All
 
-  - name: https-dashboard
+  - name: https
     protocol: HTTPS
     port: 443
-    hostname: "dashboard.sigdep.cloud"
+    hostname: "*.sigdep.cloud"
     tls:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: dashboard-gateway-tls
+        name: external-gateway-tls
         namespace: ingress
     allowedRoutes:
       namespaces:
