@@ -46,11 +46,19 @@ spec:
         enabled: true
         # Watch all namespaces for Gateway resources
         namespaces: []
-      kubernetesIngress:
-        enabled: false  # Disable legacy Ingress support
 
+      # Disable legacy Ingress support
+      kubernetesIngress:
+        enabled: false
+
+    # Disable default gateway creation
     gateway:
-      enabled: false # Disable default gateway creation
+      enabled: false
+
+    # Enable experimental features
+    experimental:
+      kubernetesGateway:
+        enabled: true
 
     # Ports configuration with hostPort for Linode NodeBalancer
     ports:
@@ -150,11 +158,10 @@ spec:
     additionalArguments:
       - --api.insecure=false
       - --api.dashboard=false
+      - --experimental.kubernetesgateway=true
       - --entryPoints.web.proxyProtocol.insecure=false
       - --entryPoints.websecure.proxyProtocol.insecure=false
       - --entryPoints.web.forwardedHeaders.insecure=false
       - --entryPoints.websecure.forwardedHeaders.insecure=false
       - --entryPoints.web.transport.respondingTimeouts.idleTimeout=300s
       - --entryPoints.websecure.transport.respondingTimeouts.idleTimeout=300s
-      - --experimental.kubernetesgateway=true
-      - --providers.kubernetesgateway.experimentalchannel=true
