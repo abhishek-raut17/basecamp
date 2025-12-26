@@ -12,8 +12,4 @@ spec:
     name: flux-system
   dependsOn:
     - name: security-cert-manager
-  healthChecks:
-    - apiVersion: cert-manager.io/v1
-      kind: ClusterIssuer
-      name: letsencrypt-dev
   timeout: 15m

@@ -10,16 +10,4 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  healthChecks:
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: cert-manager
-      namespace: security
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: cert-manager-cainjector
-      namespace: security
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: cert-manager-webhook
-      namespace: security
+  timeout: 15m

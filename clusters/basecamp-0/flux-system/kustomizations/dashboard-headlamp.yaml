@@ -14,9 +14,4 @@ spec:
     - name: security-cert-manager
     - name: security-cluster-issuer
     - name: ingress-traefik
-  healthChecks:
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: headlamp
-      namespace: dashboard
   timeout: 15m
