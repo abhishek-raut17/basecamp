@@ -269,7 +269,7 @@ resource "linode_nodebalancer_node" "http_nodes" {
   count           = length(var.workers_ip)
   nodebalancer_id = var.gateway_nodebalancer.gateway.id
   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "http"][0]
-  address         = "${local.workers_private_ips[count.index]}:80"
+  address         = "${local.workers_private_ips[count.index]}:30080"
   label           = "${var.infra}-${count.index}-http-port-lb"
   weight          = 100
   mode            = "accept"
@@ -286,30 +286,10 @@ resource "linode_nodebalancer_node" "https_nodes" {
   count           = length(var.workers_ip)
   nodebalancer_id = var.gateway_nodebalancer.gateway.id
   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "https"][0]
-  address         = "${local.workers_private_ips[count.index]}:443"
+  address         = "${local.workers_private_ips[count.index]}:30443"
   label           = "${var.infra}-${count.index}-https-port-lb"
   weight          = 100
   mode            = "accept"
 }
-
-# FOR TESTING PURPOSES ONLY - COMMENT OUT FOR PRODUCTION USAGE
-#
-# resource "linode_nodebalancer_node" "kubectlapi_nodes" {
-#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
-#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "kubectl_api"][0]
-#   address         = "${local.controlplane_private_ip}:6443"
-#   label           = "${var.infra}-kubectlapi-port-lb"
-#   weight          = 100
-#   mode            = "accept"
-# }
-
-# resource "linode_nodebalancer_node" "talosctlapi_nodes" {
-#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
-#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "talosctl_api"][0]
-#   address         = "${local.controlplane_private_ip}:50000"
-#   label           = "${var.infra}-talosctlapi-port-lb"
-#   weight          = 100
-#   mode            = "accept"
-# }
 
 # ------------------------------------------------------------------------------
