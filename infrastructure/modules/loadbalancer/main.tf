@@ -51,6 +51,7 @@ resource "linode_nodebalancer_config" "http" {
   port            = 80
   algorithm       = "roundrobin"
   stickiness      = "none"
+  proxy_protocol = "v2"
 }
 
 resource "linode_nodebalancer_config" "https" {
@@ -59,30 +60,8 @@ resource "linode_nodebalancer_config" "https" {
   port            = 443
   algorithm       = "roundrobin"
   stickiness      = "none"
+  proxy_protocol = "v2"
 }
-
-# FOR TESTING PURPOSES ONLY - COMMENT OUT FOR PRODUCTION USAGE
-#
-# ------------------------------------------------------------------------------
-# Configure nodebalancer ports for kubectl and talosctl access to control plane
-# ------------------------------------------------------------------------------
-# resource "linode_nodebalancer_config" "kubectlapi" {
-#   nodebalancer_id = linode_nodebalancer.gateway_lb.id
-#   protocol        = "tcp"
-#   port            = 6443
-#   algorithm       = "roundrobin"
-#   stickiness      = "none"
-#   check           = "none"
-# }
-
-# resource "linode_nodebalancer_config" "talosctlapi" {
-#   nodebalancer_id = linode_nodebalancer.gateway_lb.id
-#   protocol        = "tcp"
-#   port            = 50000
-#   algorithm       = "roundrobin"
-#   stickiness      = "none"
-#   check           = "none"
-# }
 
 # ------------------------------------------------------------------------------
 # Loadbalancer firewall: Attach nodebalancer to dmz firewall

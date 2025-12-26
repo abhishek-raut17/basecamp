@@ -343,6 +343,12 @@ main() {
 
     # Step 13: Deploy webhook plugin for cert-manager for linode DNS provider
     if ! resource_exists "deploy" "cert-manager-webhook-linode"; then
+        
+        if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=300s; then
+            log_error "fatal error: timeout waiting for cert-manager-webhook to be ready"
+            exit 1
+        fi
+
         helm install cert-manager-webhook-linode \
             --namespace=security \
             --set certManager.namespace=security \

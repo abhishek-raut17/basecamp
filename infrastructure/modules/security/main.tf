@@ -25,6 +25,15 @@ terraform {
 resource "linode_firewall" "cluster_fw" {
   label = "${var.infra}-cluster-firewall"
 
+  # Allow TCP from nodebalancer for service traffic
+  inbound {
+    label    = "allow-tcp-from-gateway-subnet"
+    action   = "ACCEPT"
+    protocol = "TCP"
+    ports    = "30080,30443"
+    ipv4     = ["192.168.0.0/16"]
+  }
+
   # Allow TCP from cluster subnet for internal cluster communication
   inbound {
     label    = "allow-tcp-from-cluster-subnet"
