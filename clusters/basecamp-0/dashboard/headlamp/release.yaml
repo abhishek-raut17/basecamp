@@ -15,6 +15,7 @@ spec:
         name: headlamp
         namespace: flux-system
       interval: 12h
+
   install:
     crds: Create
     remediation:
