@@ -104,21 +104,8 @@ spec:
       enabled: true
       type: NodePort
     
-    # Do NOT use hostNetwork - we explicitly use hostPort only
+    # Do NOT use hostNetwork - we explicitly use nodeport only
     hostNetwork: false
-
-    # Explicitly map Gateway API ports to Traefik entrypoints
-    gatewayAPI:
-      listeners:
-        - port: 80
-          entrypoint: web
-        - port: 443
-          entrypoint: websecure
-
-    # Enable ping endpoint for NodeBalancer health checks
-    ping:
-      enabled: true
-      entryPoint: web
     
     # Prometheus metrics
     metrics:
