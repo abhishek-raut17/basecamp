@@ -4,7 +4,7 @@ metadata:
   name: external-gateway
   namespace: ingress
   annotations:
-    traefik.io/entrypoints: web,websecure
+    # traefik.io/entrypoints: web,websecure
     cert-manager.io/cluster-issuer: letsencrypt-dev
 spec:
   gatewayClassName: traefik
@@ -24,7 +24,7 @@ spec:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: ingress-gateway-tls
+        name: external-gateway-tls
         namespace: ingress
     allowedRoutes:
       namespaces:
