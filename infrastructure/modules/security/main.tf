@@ -30,7 +30,7 @@ resource "linode_firewall" "cluster_fw" {
     label    = "allow-tcp-from-gateway-subnet"
     action   = "ACCEPT"
     protocol = "TCP"
-    ports    = "30080,30443"
+    ports    = "8000,8443"
     ipv4     = ["192.168.0.0/16"]
   }
 
