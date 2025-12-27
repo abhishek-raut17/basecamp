@@ -24,7 +24,6 @@ spec:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        type: kubernetes.io/tls
         name: external-gateway-tls
         namespace: ingress
     allowedRoutes:
