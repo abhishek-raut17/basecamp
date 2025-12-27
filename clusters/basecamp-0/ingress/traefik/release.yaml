@@ -59,16 +59,16 @@ spec:
       enabled: false
 
     # Enable experimental features
-    experimental:
-      kubernetesGateway:
-        enabled: true
+    # experimental:
+    #   kubernetesGateway:
+    #     enabled: true
 
     # Ports configuration with hostPort for Linode NodeBalancer
     ports:
       web:
-        port: 8000          # Container port (Traefik process listens here)
-        exposedPort: 80     # Service port (for internal cluster access)
-        nodePort: 30080     # Node port (NodeBalancer → this → container:8000)
+        port: 80              # Container port (Traefik process listens here)
+        exposedPort: 80       # Service port (for internal cluster access)
+        # nodePort: 30080     # Node port (NodeBalancer → this → container:8000)
         protocol: TCP
         forwardedHeaders:
           trustedIPs:
@@ -76,9 +76,9 @@ spec:
             - 172.16.0.0/12        # Docker bridge networks
             - 192.168.0.0/16       # Local networks
       websecure:
-        port: 8443            # Container port (Traefik process listens here)
+        port: 443             # Container port (Traefik process listens here)
         exposedPort: 443      # Service port (for internal cluster access)
-        nodePort: 30443       # Node port (NodeBalancer → this → container:8443)
+        # nodePort: 30443     # Node port (NodeBalancer → this → container:8443)
         protocol: TCP
         forwardedHeaders:
           trustedIPs:
@@ -91,10 +91,10 @@ spec:
     # Service configuration
     service:
       enabled: true
-      type: NodePort
+      type: ClusterIP
     
-    # Do NOT use hostNetwork - we explicitly use nodeport only
-    hostNetwork: false
+    # use hostNetwork - we explicitly use hostnetwork to listen on 80/443 on private interface
+    hostNetwork: true
     
     # Prometheus metrics
     metrics:
