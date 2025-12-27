@@ -71,8 +71,8 @@ spec:
     # Ports configuration with hostPort for Linode NodeBalancer
     ports:
       web:
-        port: 80              # Container port (Traefik process listens here)
-        exposedPort: 80       # Service port (for internal cluster access)
+        port: 8000            # Container port (Traefik process listens here)
+        exposedPort: 8000     # Port bound to host machine in case hostnetwork: true
         # nodePort: 30080     # Node port (NodeBalancer → this → container:8000)
         protocol: TCP
         forwardedHeaders:
@@ -81,8 +81,8 @@ spec:
             - 172.16.0.0/12        # Docker bridge networks
             - 192.168.0.0/16       # Local networks
       websecure:
-        port: 443             # Container port (Traefik process listens here)
-        exposedPort: 443      # Service port (for internal cluster access)
+        port: 8443            # Container port (Traefik process listens here)
+        exposedPort: 8443     # Port bound to host machine in case hostnetwork: true
         # nodePort: 30443     # Node port (NodeBalancer → this → container:8443)
         protocol: TCP
         forwardedHeaders:
@@ -156,5 +156,5 @@ spec:
       - --api.insecure=false
       - --api.dashboard=false
       - --experimental.kubernetesgateway=true
-      - --entryPoints.web.address=:80/tcp
-      - --entryPoints.websecure.address=:443/tcp
+      - --entryPoints.web.address=:8000/tcp
+      - --entryPoints.websecure.address=:8443/tcp
