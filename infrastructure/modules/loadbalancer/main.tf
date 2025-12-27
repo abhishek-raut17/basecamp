@@ -51,7 +51,7 @@ resource "linode_nodebalancer_config" "http" {
   port            = 80
   algorithm       = "roundrobin"
   stickiness      = "none"
-  proxy_protocol = "v2"
+  proxy_protocol  = "none"
 }
 
 resource "linode_nodebalancer_config" "https" {
@@ -60,7 +60,7 @@ resource "linode_nodebalancer_config" "https" {
   port            = 443
   algorithm       = "roundrobin"
   stickiness      = "none"
-  proxy_protocol = "v2"
+  proxy_protocol  = "none"
 }
 
 # ------------------------------------------------------------------------------
