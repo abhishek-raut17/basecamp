@@ -151,3 +151,5 @@ spec:
       - --api.insecure=false
       - --api.dashboard=false
       - --experimental.kubernetesgateway=true
+      - --entryPoints.web.address=:80/tcp
+      - --entryPoints.websecure.address=:443/tcp
