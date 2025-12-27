@@ -19,7 +19,7 @@ spec:
   - name: https
     protocol: HTTPS
     port: 8443
-    hostname: "*.sigdep.cloud"
+    # hostname: "*.sigdep.cloud"
     tls:
       mode: Terminate
       certificateRefs:
