@@ -269,7 +269,7 @@ resource "linode_nodebalancer_node" "http_nodes" {
   count           = length(var.workers_ip)
   nodebalancer_id = var.gateway_nodebalancer.gateway.id
   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "http"][0]
-  address         = "${local.workers_private_ips[count.index]}:30080"
+  address         = "${local.workers_private_ips[count.index]}:80"
   label           = "${var.infra}-${count.index}-http-port-lb"
   weight          = 100
   mode            = "accept"
@@ -286,7 +286,7 @@ resource "linode_nodebalancer_node" "https_nodes" {
   count           = length(var.workers_ip)
   nodebalancer_id = var.gateway_nodebalancer.gateway.id
   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "https"][0]
-  address         = "${local.workers_private_ips[count.index]}:30443"
+  address         = "${local.workers_private_ips[count.index]}:443"
   label           = "${var.infra}-${count.index}-https-port-lb"
   weight          = 100
   mode            = "accept"
