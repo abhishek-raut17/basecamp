@@ -27,6 +27,8 @@ spec:
     deployment:
       kind: DaemonSet
       replicas: 1  # Ignored for DaemonSet, but good to document
+      rollingUpdate:
+        maxUnavailable: 1  # must be > 0 when hostNetwork is true
     
     # Node selection - only worker nodes
     nodeSelector:
