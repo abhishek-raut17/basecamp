@@ -10,5 +10,4 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - "sigdep.cloud"
-    - "dashboard.sigdep.cloud"
     - "*.sigdep.cloud"
