@@ -66,38 +66,27 @@ spec:
     # Ports configuration with hostPort for Linode NodeBalancer
     ports:
       web:
-        port: 80            # Container port (Traefik process listens here)
+        port: 8000          # Container port (Traefik process listens here)
         exposedPort: 80     # Service port (for internal cluster access)
         nodePort: 30080     # Node port (NodeBalancer → this → container:8000)
         protocol: TCP
-        # IMPORTANT: Client IP preservation for rate limiting, logging, geo-location
-        proxyProtocol:
-          trustedIPs:
-            - 10.0.0.0/8           # Linode private network (NodeBalancer IPs)
-            - 172.16.0.0/12        # Docker bridge networks
-            - 192.168.0.0/16       # Local networks
         forwardedHeaders:
           trustedIPs:
             - 10.0.0.0/8           # Linode private network
             - 172.16.0.0/12        # Docker bridge networks
             - 192.168.0.0/16       # Local networks
       websecure:
-        port: 443             # Container port (Traefik process listens here)
+        port: 8443            # Container port (Traefik process listens here)
         exposedPort: 443      # Service port (for internal cluster access)
         nodePort: 30443       # Node port (NodeBalancer → this → container:8443)
         protocol: TCP
-        http3:
-          enabled: true     # Enable HTTP/3 (QUIC) support
-        proxyProtocol:
-          trustedIPs:
-            - 10.0.0.0/8           # Linode private network (NodeBalancer IPs)
-            - 172.16.0.0/12        # Docker bridge networks
-            - 192.168.0.0/16       # Local networks
         forwardedHeaders:
           trustedIPs:
             - 10.0.0.0/8           # Linode private network
             - 172.16.0.0/12        # Docker bridge networks
             - 192.168.0.0/16       # Local networks
+        tls:
+          enabled: true
     
     # Service configuration
     service:
