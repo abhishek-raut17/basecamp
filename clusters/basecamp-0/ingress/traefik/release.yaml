@@ -26,16 +26,19 @@ spec:
     # Deploy as DaemonSet on worker nodes only
     deployment:
       kind: DaemonSet
+
+    # Customize updateStrategy of DaemonSet
+    updateStrategy:
       rollingUpdate:
-        maxUnavailable: 1  # must be > 0 when hostNetwork is true
-    
+        maxUnavailable: 1
+
     # Node selection - only worker nodes
     nodeSelector:
       node-role.kubernetes.io/worker: ""
-    
+
     # Prevent scheduling on control-plane nodes
     tolerations: []
-    
+
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -43,7 +46,7 @@ spec:
           - matchExpressions:
             - key: node-role.kubernetes.io/control-plane
               operator: DoesNotExist
-    
+
     # Enable Gateway API support ONLY
     providers:
       kubernetesGateway:
@@ -88,15 +91,15 @@ spec:
             - 192.168.0.0/16       # Local networks
         tls:
           enabled: true
-    
+
     # Service configuration
     service:
       enabled: true
       type: ClusterIP
-    
+
     # use hostNetwork - we explicitly use hostnetwork to listen on 80/443 on private interface
     hostNetwork: true
-    
+
     # Prometheus metrics
     metrics:
       prometheus:
