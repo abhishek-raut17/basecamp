@@ -34,15 +34,16 @@ terraform {
 
 locals {
 
+  root_dir = abspath("${path.module}/../../..")
+
   # Bastion IPs
-  vpc_ip = trimspace(chomp(var.vpc_ip))
-  public_ip = [for ipv in data.linode_instance_networking.bastion_network.ipv4 :
-  ipv.public[0].address if ipv.public != []][0]
+  vpc_ip    = trimspace(chomp(var.vpc_ip))
+  public_ip = [for ipv in data.linode_instance_networking.bastion_network.ipv4 : ipv.public[0].address if ipv.public != []][0]
 
   # Paths to files to copy to bastion
   generated_dir = trimspace(chomp("${path.module}/../../../manifests/generated"))
   talosconfig   = trimspace(chomp("${local.generated_dir}/talosconfig"))
-  bastion_initd = trimspace(chomp("${path.module}/initd"))
+  bastion_initd = trimspace(chomp("${local.root_dir}/lib/initd"))
 }
 
 data "linode_instance_networking" "bastion_network" {
@@ -67,10 +68,10 @@ resource "linode_sshkey" "admin_sshkey" {
 }
 
 # ------------------------------------------------------------------------------
-# Provision bastion host for secured access to cluster and NAT gateway
+# Provision bastion/gateway host for secured access to cluster and gateway
 # ------------------------------------------------------------------------------
 resource "linode_instance" "bastion" {
-  label           = "${var.infra}-bastion"
+  label           = "${var.infra}-bastion-gateway"
   region          = var.region
   type            = var.nodetype
   image           = var.nodeimage
@@ -90,7 +91,7 @@ resource "linode_instance" "bastion" {
     }
   }
 
-  tags = [var.infra, "bastion"]
+  tags = ["${var.infra}", "bastion", "gateway"]
 }
 
 # ------------------------------------------------------------------------------
@@ -141,22 +142,22 @@ resource "terraform_data" "setup_bastion" {
   # Step 3: Send initd dir to bastion to use to setup bastion for cluster access
   provisioner "file" {
     source      = local.bastion_initd
-    destination = "/usr/local/bin"
+    destination = "/usr/local/lib"
   }
 
   # Step 4: Set execute permissions on initd scripts
   provisioner "remote-exec" {
     inline = [
-      "chmod 0750 /usr/local/bin/initd/*"
+      "chmod 0750 /usr/local/lib/initd/*.sh"
     ]
   }
 
   # Step 5: Run initd script to setup bastion for cluster access
-  # provisioner "remote-exec" {
-  #   inline = [
-  #     "/usr/local/bin/initd/init.sh --admin-token ${var.token} --cluster-name ${var.infra} --cluster-endpoint ${var.cluster_endpoint} --cluster-subnet ${var.cluster_subnet} --git-repo ${var.git_repo} --sshkey-path /tmp/devops_cd"
-  #   ]
-  # }
+  provisioner "remote-exec" {
+    inline = [
+      "/usr/local/lib/initd/init.sh --ccm-token ${var.token} --cluster-name ${var.infra} --cluster-endpoint ${var.cluster_endpoint} --cluster-subnet ${var.cluster_subnet} --git-repo ${var.git_repo}"
+    ]
+  }
 }
 
 # ------------------------------------------------------------------------------
