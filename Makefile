@@ -27,7 +27,7 @@ LOCAL_LIB := $(LIB)/local
 SHARED_LIB := $(LIB)/shared
 
 # Tasks
-.PHONY: all help prereq setup plan build clean
+.PHONY: all help prereq setup plan build clean destroy
 
 # Generate help man page
 help:
@@ -42,6 +42,7 @@ help:
 	@echo "  plan     - Plan cluster infrastructure resources"
 	@echo "  build    - Compile project and submodules"
 	@echo "  clean    - Remove build artifacts and clean submodules"
+	@echo "  destroy  - Destroy infrastructure using terraform (CRITICAL)"
 	@echo "  help     - Show this help message"
 	@echo ""
 
@@ -73,3 +74,8 @@ build: prereq setup plan
 clean:
 	@if [ ! -f $(LOCAL_LIB)/bin/cleanup.sh ]; then echo "Cluster setup binary not found."; exit 1; fi
 	@$(LOCAL_LIB)/bin/cleanup.sh
+
+# Destroy infrastructure: (CRITICAL)
+destroy:
+	@if [ ! -d $(INFRA_DIR) ]; then echo "Infrastructure directory not found."; exit 1; fi
+	@cd $(INFRA_DIR) && terraform destroy -auto-approve
