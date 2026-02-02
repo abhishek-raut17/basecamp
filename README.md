@@ -1,43 +1,219 @@
 # BaseCamp
 
-#TODO: write a good readme
-Home lab for hosting private next cloud with side apps for personal, friends and family use
+A cloud infrastructure automation project for provisioning a Talos Kubernetes cluster on Linode with integrated DevOps tooling. Designed as a personal homelab for hosting private Nextcloud and other self-hosted applications for personal, friends, and family use.
 
-## Prerequsities:
+**Status**: Home lab infrastructure using Talos Linux, Kubernetes, and infrastructure-as-code via Terraform.
 
-1. Linode (Akamai) Account
-2. Talos Image in Linode Images (this is needed since no native image in linode)
-3. Generate ssh-key for secured access to bastion host for cluster maintainance and linode token
-4. Tools/CLI: curl, terraform, talosctl, kubectl, helm
 ---
 
-## TODO: 
-1. cp terraform.tfstate to a secure location after apply
+## Project Overview
+
+BaseCamp is a comprehensive Infrastructure-as-Code (IaC) project that automates the provisioning and management of a Kubernetes cluster on Linode cloud. It combines Terraform for infrastructure provisioning, Talos Linux for container-optimized nodes, and FluxCD for GitOps-based application deployment.
+
+### Key Components:
+- **Infrastructure**: Terraform-based provisioning on Linode (VPC, subnets, firewalls, compute nodes)
+- **Kubernetes Distribution**: Talos Linux (minimal, immutable OS for Kubernetes)
+- **Cluster Management**: Single control plane with configurable worker nodes
+- **Network Management**: Cilium CNI plugin with Hubble observability
+- **GitOps**: FluxCD for continuous deployment from Git repositories
+- **Ingress & SSL**: Traefik ingress controller with cert-manager for TLS
+- **Storage**: Longhorn for persistent volume management
+- **Monitoring UI**: Headlamp for Kubernetes cluster dashboard
+
 ---
 
-## Repository steps:
-1. Generate Personal Access Token PAT in linode for IaC and github for CD (fluxcd)
-2. Download and add Talos image from talos and update into linode custom images
-3. Run make
-    3.0. Check and validate required variables, tool vesions and paths in .env file
-    3.1. Download all the required binaries for operations (talosctl, kubectl, helm)
-    3.2. Generate SSH keys to be used for bastion access
-    3.3. Generate and validate machineconfigs for cluster nodes (along with CNI plugin)
-    3.4. Build and run cluster provisioning with terraform
-    3.5. Bootstrap cluster via bastion
-    3.6. Install and provision FluxCD components
-4. Provision traefik via fluxcd using manifests/helm
-5. Provision cert-manager via fluxcd using manifests/helm
-6. Provision headlamp via fluxcd using manifests/helm
-7. Provision longhorn via fluxcd using manifests/helm
-8. Make sure that there is a `cni.secret.yaml` at the `manifests/patches/` path. This will be used by cilium for secrets
-9. Helm template should be run before of `make all` and the generated `cni.cilium.yaml` should be split into `custom.cni.yaml` and `cni.secret.yaml` and stored in respective places
-10. Update `infrastructure/terraform.tfvars` with the required values. Refer to `infrastructure/terraform.tfvars.template` for required variables
-11. Refer to `.env.template` for env variables for make file
+## Prerequisites
+### Cloud Provider
+- **Linode (Akamai) Account** with billing enabled
+- **Linode API Token** (Personal Access Token) for infrastructure provisioning
 
-## Helm command for generating template of CNI plugin (Cilium)
+### Local Machine Requirements
+1. **Terraform** (>= 1.5.0)
+2. **talosctl** - Talos cluster management CLI
+3. **kubectl** - Kubernetes command-line tool
+4. **helm** - Kubernetes package manager (v3.x)
+5. **curl** - For downloading tools and manifests
+6. **GNU Make** - For running build automation
+
+### Linode Setup
+1. **Custom Talos Image** - Download Talos image and upload to Linode custom images (no native Talos image available in Linode)
+2. **SSH Key Pair** - Generate for bastion host access and cluster management
+3. **GitHub Account** (optional) - For FluxCD GitOps deployment
+
+---
+
+## Project Structure
 
 ```
+basecamp/
+├── README.md                          # This file
+├── LICENSE                            # Project license
+├── Makefile                           # Build automation targets
+├── .env.template                      # Environment variables template
+├── .env                               # Environment variables (configured by user)
+│
+├── infrastructure/                    # Terraform Infrastructure-as-Code
+│   ├── main.tf                        # Root module orchestration
+│   ├── variables.tf                   # Input variables
+│   ├── output.tf                      # Module outputs
+│   ├── terraform.tfvars.template      # Terraform variables template
+│   ├── terraform.tfstate              # Terraform state (local backend)
+│   ├── terraform.tfstate.backup       # Terraform state backup
+│   └── modules/                       # Terraform modules
+│       ├── network/                   # VPC and subnet configuration
+│       │   ├── main.tf
+│       │   ├── variables.tf
+│       │   └── outputs.tf
+│       ├── security/                  # Firewall and security group rules
+│       │   ├── main.tf
+│       │   ├── variables.tf
+│       │   └── outputs.tf
+│       ├── loadbalancer/              # NodeBalancer (layer 4 load balancing)
+│       │   ├── main.tf
+│       │   ├── variables.tf
+│       │   └── outputs.tf
+│       ├── bastion/                   # Bastion host for cluster management
+│       │   ├── main.tf
+│       │   ├── variables.tf
+│       │   ├── outputs.tf
+│       │   └── initd/                 # Bastion initialization scripts
+│       │       ├── init.sh            # Main bastion provisioning script
+│       │       └── shared/
+│       │           ├── logger.sh      # Logging utilities
+│       │           └── utils.sh       # Common utility functions
+│       ├── compute/                   # Kubernetes cluster nodes
+│       │   ├── main.tf
+│       │   ├── variables.tf
+│       │   └── outputs.tf
+│       └── prereq/                    # Prerequisite resources and configs
+│           ├── main.tf
+│           ├── variables.tf
+│           └── outputs.tf
+│
+├── lib/                               # Build and automation libraries
+│   ├── cluster/
+│   │   └── bin/
+│   │       ├── setup.sh               # Generate Talos machine configs
+│   │       ├── plan.sh                # Terraform plan execution
+│   │       └── build.sh               # Terraform apply execution
+│   ├── local/
+│   │   └── bin/
+│   │       ├── prereq.sh              # Local machine prerequisites check
+│   │       └── cleanup.sh             # Resource cleanup
+│   └── shared/
+│       └── bin/
+│           ├── logger.sh              # Logging functions
+│           └── utils.sh               # Utility functions
+│
+└── manifests/                         # Kubernetes manifests and configs
+    ├── generated/                     # Auto-generated by setup scripts
+    │   ├── controlplane.yaml          # Control plane Talos config
+    │   ├── worker.yaml                # Worker node Talos config
+    │   ├── secrets.yaml               # Cluster secrets
+    │   └── talosconfig                # Talos client config
+    ├── machineconfig/                 # Talos machine configurations
+    │   ├── controlplane.machineconfig.yaml
+    │   ├── controlplane.patched.machineconfig.yaml
+    │   ├── wkr.machineconfig.yaml
+    │   ├── wkr-0.patched.machineconfig.yaml
+    │   ├── wkr-1.patched.machineconfig.yaml
+    │   └── wkr-2.patched.machineconfig.yaml
+    ├── patches/                       # Talos config patches
+    │   ├── cp.machineconfig.yaml      # Control plane patches
+    │   └── wkr.machineconfig.yaml     # Worker node patches
+    └── static/                        # Static manifests
+        └── cni/
+            └── custom.cni.yaml        # Cilium CNI configuration
+```
+
+---
+
+## Getting Started
+
+### 1. Initial Setup
+
+Clone the repository and prepare the environment:
+
+```bash
+cd basecamp
+cp .env.template .env
+cp infrastructure/terraform.tfvars.template infrastructure/terraform.tfvars
+```
+
+### 2. Configure Environment Variables
+
+Edit `.env` and set the required values:
+
+```bash
+# Logging and dry run
+LOG_LEVEL=0              # 0=debug, 1=info, 2=warn, 3=error
+DRY_RUN=0                # 1=dry run, 0=apply changes
+
+# Project identity
+PROJECT_NAME=basecamp
+RELEASE_VERSION=v1.0.0
+
+# Tool paths (created by provisioning scripts)
+TALOSCONFIG=~/.talos/config
+KUBECONFIG=~/.kube/config
+BIN_DIR=$HOME/.local/bin
+
+# Tool download URLs
+TALOSCTL_URL=https://github.com/siderolabs/talos/releases/download/v1.x.x/...
+KUBECTL_URL=https://dl.k8s.io/release/v1.x.x/...
+HELM_URL=https://get.helm.sh/...
+FLUXCD_URL=https://github.com/fluxcd/flux2/releases/download/v2.x.x/...
+
+# Cloud provider configuration
+CLOUD_PROVIDER_REGION=us-ord          # Linode region (e.g., us-ord, us-sea, eu-west)
+CLOUD_PROVIDER_PAT=your_linode_token  # Linode API token (sensitive)
+
+# Git and GitOps
+GITHUB_PAT=your_github_token          # GitHub personal access token (sensitive)
+GIT_REPO=https://github.com/your-user/your-repo
+
+# SSH Keys
+ACCESS_SSHKEY_PATH=~/.ssh/basecamp_rsa.pub
+FLUXCD_SSHKEY_PATH=~/.ssh/fluxcd_ed25519.pub
+
+# Network
+VPC_CIDR=10.0.0.0/16                  # Private VPC CIDR block
+
+# Node Configuration
+NODETYPE_BASTION=g6-standard-1        # Bastion host type
+NODETYPE_CLUSTER=g6-standard-4        # Cluster node type
+IMG_BASTION=linode/ubuntu22.04        # Bastion image
+IMG_CLUSTER=your-talos-image-id       # Custom Talos image ID
+VERSION_TALOSCTL=v1.x.x
+VERSION_KUBECTL=v1.x.x
+WORKER_NODES=3                        # Number of worker nodes
+```
+
+### 3. Configure Terraform Variables
+
+Edit `infrastructure/terraform.tfvars` with your Linode configuration:
+
+```hcl
+project_name       = "basecamp"
+region             = "us-ord"
+linode_token       = "your_token_here"
+git_token          = "your_github_token"
+git_repo           = "https://github.com/your-user/your-repo"
+sshkey_path        = "~/.ssh/basecamp_rsa.pub"
+fluxcd_sshkey_path = "~/.ssh/fluxcd_ed25519.pub"
+vpc_cidr           = "10.0.0.0/16"
+bastion_nodetype   = "g6-standard-1"
+cluster_nodetype   = "g6-standard-4"
+bastion_img        = "linode/ubuntu22.04"
+cluster_img        = "your-talos-image-id"
+worker_nodes       = 3
+```
+
+### 4. Generate CNI Plugin Manifest
+
+Generate the Cilium CNI configuration using Helm:
+
+```bash
 helm template cilium cilium/cilium \
   --version 1.18.0 \
   --namespace kube-system \
@@ -55,9 +231,268 @@ helm template cilium cilium/cilium \
   --set k8sServicePort=7445 \
   --set gatewayAPI.enabled=true \
   --set gatewayAPI.enableAlpn=true \
-  --set gatewayAPI.enableAppPrototcol=true \
-  > custom.cni.yaml
+  --set gatewayAPI.enableAppProtocol=true \
+  > manifests/static/cni/custom.cni.yaml
 ```
 
-## FluxCD Steps: 
-1. Generate SSH key (ed25519) and add public key to github as deploy key
+Split the generated file into two parts:
+- **custom.cni.yaml**: Main CNI configuration → `manifests/static/cni/`
+- **cni.secret.yaml**: Secrets configuration → `manifests/patches/` (for Cilium secrets)
+
+### 5. Set Up SSH Keys
+
+Generate SSH keys for cluster access:
+
+```bash
+# Bastion access key
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/basecamp_rsa -N ""
+
+# FluxCD GitOps key (for GitHub integration)
+ssh-keygen -t ed25519 -f ~/.ssh/fluxcd_ed25519 -N ""
+
+# Add public key to GitHub as deploy key in your GitOps repository
+cat ~/.ssh/fluxcd_ed25519.pub
+```
+
+### 6. Upload Talos Image to Linode
+
+1. Download Talos Linux image for Linode
+2. Upload to Linode via web console: Images → Custom Images → Upload Image
+3. Note the image ID and update `IMG_CLUSTER` in `.env`
+
+---
+
+## Make Targets
+
+The project uses GNU Make for automation. Available targets:
+
+```bash
+make help          # Display all available targets
+make prereq        # Verify required tools are installed on local machine
+make setup         # Generate Talos machine configurations for cluster nodes
+make plan          # Run Terraform plan for infrastructure changes
+make build         # Apply Terraform configuration and provision infrastructure
+make clean         # Remove build artifacts and cleanup resources
+make all           # Run all targets in sequence: prereq → setup → plan → build → clean
+```
+
+### Typical Workflow:
+
+```bash
+# 1. Verify local prerequisites
+make prereq
+
+# 2. Setup cluster configurations
+make setup
+
+# 3. Plan infrastructure changes
+make plan
+
+# 4. Apply infrastructure changes
+make build
+
+# 5. Bootstrap cluster from bastion
+# (Manual step - SSH to bastion and run bootstrap scripts)
+```
+
+---
+
+## Infrastructure Architecture
+
+### Network Architecture
+- **VPC**: Private virtual network with CIDR `10.0.0.0/16` (default, configurable)
+- **Cluster Subnet**: `10.0.10.0/24` - Hosts control plane and worker nodes
+- **DMZ Subnet**: `10.0.20.0/24` - Hosts bastion and load balancer
+
+### Security Architecture
+- **Cluster Firewall**: Restricts inbound/outbound traffic for Kubernetes nodes
+- **DMZ Firewall**: Restricted access to bastion host and load balancer
+- **Bastion Host**: Jump host for secure SSH access to cluster nodes
+- **Node Firewall Rules**: Configured per module (network, security, compute)
+
+### Compute Architecture
+- **Control Plane**: 1x node running etcd, API server, and controller manager
+- **Worker Nodes**: Configurable (default 3) for application workloads
+- **Bastion Host**: Ubuntu-based jump server for cluster management
+- **Load Balancer**: Linode NodeBalancer for traffic distribution
+
+### Node Configuration
+- **Operating System**: Talos Linux (immutable, minimal, container-optimized)
+- **Container Runtime**: containerd
+- **Init System**: none (systemd removed for immutability)
+- **Service Mesh**: Cilium CNI with eBPF networking
+
+---
+
+## Cluster Bootstrap & Setup
+
+### Post-Deployment Steps:
+
+1. **Retrieve Talos Configuration**
+   ```bash
+   # Configuration generated in manifests/generated/talosconfig
+   export TALOSCONFIG=$PWD/manifests/generated/talosconfig
+   ```
+
+2. **Bootstrap Cluster**
+   - SSH to bastion host
+   - Run cluster bootstrap scripts
+   - Retrieve kubeconfig
+
+3. **Verify Cluster Health**
+   ```bash
+   talosctl health
+   kubectl get nodes
+   kubectl get pods -A
+   ```
+
+4. **Deploy FluxCD**
+   - Install FluxCD components
+   - Configure Git repository for GitOps
+   - Add SSH public key to GitHub deploy keys
+
+---
+
+## Application Deployment
+
+The project is configured to deploy the following applications via FluxCD:
+
+1. **Traefik** - Ingress controller with Layer 7 routing
+2. **Cert-Manager** - Automated TLS certificate management
+3. **Headlamp** - Web-based Kubernetes cluster UI
+4. **Longhorn** - Distributed block storage for persistent volumes
+
+### Deploy via FluxCD:
+
+```bash
+# Install FluxCD
+flux install
+
+# Create secret for Git repository
+flux create secret git github-pat \
+  --url=https://github.com/your-user/your-repo \
+  --username=your-user \
+  --password=$GITHUB_PAT
+
+# Bootstrap FluxCD
+flux bootstrap github \
+  --owner=your-user \
+  --repo=your-repo \
+  --path=manifests/
+```
+
+---
+
+## State Management
+
+### Terraform State
+- **Backend**: Local filesystem (`terraform.tfstate`)
+- **Location**: `infrastructure/terraform.tfstate`
+- **Backup**: `infrastructure/terraform.tfstate.backup` (created automatically)
+
+**⚠️ Important**: After `terraform apply`, backup the state file to a secure location:
+```bash
+cp infrastructure/terraform.tfstate /path/to/secure/backup/
+cp infrastructure/terraform.tfstate.backup /path/to/secure/backup/
+```
+
+### Talos Configuration
+- **Generated**: `manifests/generated/` during `make setup`
+- **Client Config**: `manifests/generated/talosconfig`
+- **Machine Configs**: `manifests/machineconfig/` and `manifests/generated/`
+
+---
+
+## Troubleshooting
+
+### Prerequisites Check Fails
+```bash
+# Check log output in detail
+LOG_LEVEL=0 make prereq
+
+# Manually verify tools
+which talosctl kubectl helm terraform curl
+```
+
+### Machine Config Generation Issues
+```bash
+# Verify CNI manifest exists
+ls -la manifests/static/cni/custom.cni.yaml
+
+# Check patches directory
+ls -la manifests/patches/
+```
+
+### Terraform Plan/Apply Fails
+```bash
+# Verify Linode token
+echo $LINODE_TOKEN
+
+# Check terraform variables
+cat infrastructure/terraform.tfvars
+
+# Validate terraform syntax
+terraform -chdir=infrastructure validate
+```
+
+### Cluster Access Issues
+```bash
+# Verify Talos config
+export TALOSCONFIG=$PWD/manifests/generated/talosconfig
+talosctl version
+talosctl config info
+
+# Check bastion SSH access
+ssh -i ~/.ssh/basecamp_rsa root@<bastion-ip>
+```
+
+---
+
+## Important Notes
+
+1. **Terraform State Security**: The `terraform.tfstate` file contains sensitive information. Keep it in a secure location and never commit to version control.
+
+2. **SSH Key Management**: Store SSH keys securely and never commit private keys to the repository.
+
+3. **Linode Token**: Keep the Linode API token secret. Use environment variables or `.env` file (excluded from git).
+
+4. **Cost Considerations**: Running this infrastructure incurs Linode charges. Refer to Linode pricing for your chosen node types and region.
+
+5. **Talos Image**: Custom Talos images must be uploaded to Linode before deployment. No native Talos image is available in Linode.
+
+---
+
+## Development & Contribution
+
+### Project Conventions
+- Use Terraform modules for infrastructure components
+- Bash scripts for automation use shared logging utilities
+- Manifests are split between static (version-controlled) and generated (dynamic)
+- Environment variables defined in `.env` template for consistency
+
+### Makefile Automation
+- Each target is idempotent where possible
+- Error handling via `trap` in Bash scripts
+- Logging output configurable via `LOG_LEVEL`
+- Dry-run mode available via `DRY_RUN=1`
+
+---
+
+## License
+
+See [LICENSE](LICENSE) file for license details.
+
+---
+
+## References
+
+- [Talos Linux Documentation](https://www.talos.dev/)
+- [Terraform Documentation](https://www.terraform.io/docs/)
+- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [Linode API Documentation](https://www.linode.com/api/)
+- [Cilium Network Policy](https://docs.cilium.io/)
+- [FluxCD Documentation](https://fluxcd.io/docs/)
+- [Traefik Ingress Controller](https://doc.traefik.io/)
+- [Cert-Manager Documentation](https://cert-manager.io/docs/)
+- [Longhorn Storage](https://longhorn.io/docs/)
+- [Headlamp Dashboard](https://headlamp.dev/)

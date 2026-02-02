@@ -33,6 +33,14 @@ terraform {
   required_version = ">= 1.0.0"
 }
 
+data "linode_instance_type" "node_type" {
+  id = var.nodetype
+}
+
+data "linode_image" "node_image" {
+  id = var.nodeimage
+}
+
 locals {
 
   cluster_node_disk_size = data.linode_instance_type.node_type.disk
@@ -44,45 +52,6 @@ locals {
   controlplane_userdata = base64encode(var.node_userdata.controlplane.content)
   workers_userdata      = [for w in var.node_userdata.workers : base64encode(w.content)]
 
-  controlplane_private_ip = [for net in data.linode_instance_networking.cp_network.ipv4 :
-  net.private[0].address if net.private != []][0]
-  workers_private_ips = [
-    for idx in range(length(data.linode_instance_networking.wkr_network)) :
-    [for net in data.linode_instance_networking.wkr_network[idx].ipv4 :
-    net.private[0].address if net.private != []][0]
-  ]
-}
-
-data "linode_instance_type" "node_type" {
-  id = var.nodetype
-}
-
-data "linode_image" "node_image" {
-  id = var.nodeimage
-}
-
-data "linode_instance_networking" "cp_network" {
-  depends_on = [
-    linode_instance.control_plane,
-    linode_instance_disk.cp_boot_disk,
-    linode_instance_config.cp_boot_config,
-    linode_firewall_device.controlplane_fw_device
-  ]
-
-  linode_id = linode_instance.control_plane.id
-}
-
-data "linode_instance_networking" "wkr_network" {
-  depends_on = [
-    linode_instance.worker,
-    linode_instance_disk.wkr_boot_disk,
-    linode_instance_disk.wkr_storage_disk,
-    linode_instance_config.wkr_boot_config,
-    linode_firewall_device.wkr_node_fw_device
-  ]
-
-  count     = length(var.workers_ip)
-  linode_id = linode_instance.worker[count.index].id
 }
 
 # ------------------------------------------------------------------------------
@@ -94,39 +63,37 @@ resource "linode_instance" "control_plane" {
     local.controlplane_userdata
   ]
 
-  label      = "${var.infra}-control-plane"
-  region     = var.region
-  type       = local.cluster_node_id
-  private_ip = true
+  label  = "${var.infra}-control-plane"
+  region = var.region
+  type   = local.cluster_node_id
 
   metadata {
     user_data = local.controlplane_userdata
   }
 
-  tags = ["test", "cluster", "control-plane", "${var.infra}"]
+  tags = ["control-plane"]
 }
 
 # ------------------------------------------------------------------------------
 # Worker Nodes: Provisions worker node(s) for k8s cluster; default: 3 nodes
 # ------------------------------------------------------------------------------
 resource "linode_instance" "worker" {
-  count = length(var.workers_ip)
+  count = length(var.vpc_ip.workers)
 
   depends_on = [
     data.linode_instance_type.node_type,
     local.workers_userdata
   ]
 
-  label      = "${var.infra}-worker-${count.index}"
-  region     = var.region
-  type       = local.cluster_node_id
-  private_ip = true
+  label  = "${var.infra}-worker-${count.index}"
+  region = var.region
+  type   = local.cluster_node_id
 
   metadata {
     user_data = local.workers_userdata[count.index]
   }
 
-  tags = ["test", "cluster", "worker-${count.index}", "${var.infra}"]
+  tags = ["worker-${count.index}"]
 }
 
 # ------------------------------------------------------------------------------
@@ -144,22 +111,11 @@ resource "linode_instance_disk" "cp_boot_disk" {
 # Primary Disk (Worker Nodes): Provisions boot disk for worker nodes
 # ------------------------------------------------------------------------------
 resource "linode_instance_disk" "wkr_boot_disk" {
-  count      = length(var.workers_ip)
+  count      = length(var.vpc_ip.workers)
   label      = "${var.infra}-boot-disk-wkr-${count.index}"
   linode_id  = linode_instance.worker[count.index].id
-  size       = 20480 # default boot disk size: 20GB for worker nodes
+  size       = local.cluster_node_disk_size
   image      = local.cluster_image_id
-  filesystem = "raw"
-}
-
-# ------------------------------------------------------------------------------
-# Raw Disk (Worker Nodes): Provisions raw disk for worker nodes for k8s data
-# ------------------------------------------------------------------------------
-resource "linode_instance_disk" "wkr_storage_disk" {
-  count      = length(var.workers_ip)
-  label      = "${var.infra}-storage-disk-wkr-${count.index}"
-  linode_id  = linode_instance.worker[count.index].id
-  size       = local.storage_disk_size
   filesystem = "raw"
 }
 
@@ -193,7 +149,7 @@ resource "linode_instance_config" "cp_boot_config" {
     purpose   = "vpc"
     subnet_id = var.subnet_id
     ipv4 {
-      vpc     = var.controlplane_ip
+      vpc     = var.vpc_ip.controlplane
       nat_1_1 = "any"
     }
   }
@@ -203,11 +159,11 @@ resource "linode_instance_config" "cp_boot_config" {
 # Boot config (Worker nodes): Attach boot disk and interface to worker nodes
 # ------------------------------------------------------------------------------
 resource "linode_instance_config" "wkr_boot_config" {
-  count     = length(var.workers_ip)
-  label     = "${var.infra}-wkr-${count.index}-boot-config"
-  linode_id = linode_instance.worker[count.index].id
-  booted    = true
-  kernel    = "linode/direct-disk"
+  depends_on = [linode_instance_disk.wkr_boot_disk]
+  count      = length(var.vpc_ip.workers)
+  label      = "${var.infra}-wkr-${count.index}-boot-config"
+  linode_id  = linode_instance.worker[count.index].id
+
 
   # Boot helpers must be disabled for Talos
   helpers {
@@ -218,21 +174,20 @@ resource "linode_instance_config" "wkr_boot_config" {
     devtmpfs_automount = false
   }
 
+  root_device = "/dev/sda"
+  booted      = true
+  kernel      = "linode/direct-disk"
+
   device {
     device_name = "sda"
     disk_id     = linode_instance_disk.wkr_boot_disk[count.index].id
-  }
-
-  device {
-    device_name = "sdb"
-    disk_id     = linode_instance_disk.wkr_storage_disk[count.index].id
   }
 
   interface {
     purpose   = "vpc"
     subnet_id = var.subnet_id
     ipv4 {
-      vpc     = var.workers_ip[count.index]
+      vpc     = var.vpc_ip.workers[count.index]
       nat_1_1 = "any"
     }
   }
@@ -250,66 +205,9 @@ resource "linode_firewall_device" "controlplane_fw_device" {
 # Worker nodes firewall: Attach worker nodes to cluster subnet firewall
 # ------------------------------------------------------------------------------
 resource "linode_firewall_device" "wkr_node_fw_device" {
-  count       = length(var.workers_ip)
+  count       = length(var.vpc_ip.workers)
   firewall_id = var.firewall_id
   entity_id   = linode_instance.worker[count.index].id
 }
-
-# ------------------------------------------------------------------------------
-# Configure nodebalancer backend nodes
-# ------------------------------------------------------------------------------
-# resource "linode_nodebalancer_node" "http_nodes" {
-#   depends_on = [
-#     linode_instance.control_plane,
-#     linode_instance.worker,
-#     data.linode_instance_networking.cp_network,
-#     data.linode_instance_networking.wkr_network
-#   ]
-
-#   count           = length(var.workers_ip)
-#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
-#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "http"][0]
-#   address         = "${local.workers_private_ips[count.index]}:80"
-#   label           = "${var.infra}-${count.index}-http-port-lb"
-#   weight          = 100
-#   mode            = "accept"
-# }
-
-# resource "linode_nodebalancer_node" "https_nodes" {
-#   depends_on = [
-#     linode_instance.control_plane,
-#     linode_instance.worker,
-#     data.linode_instance_networking.cp_network,
-#     data.linode_instance_networking.wkr_network
-#   ]
-
-#   count           = length(var.workers_ip)
-#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
-#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "https"][0]
-#   address         = "${local.workers_private_ips[count.index]}:443"
-#   label           = "${var.infra}-${count.index}-https-port-lb"
-#   weight          = 100
-#   mode            = "accept"
-# }
-
-# FOR TESTING PURPOSES ONLY - COMMENT OUT FOR PRODUCTION USAGE
-#
-# resource "linode_nodebalancer_node" "kubectlapi_nodes" {
-#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
-#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "kubectl_api"][0]
-#   address         = "${local.controlplane_private_ip}:6443"
-#   label           = "${var.infra}-kubectlapi-port-lb"
-#   weight          = 100
-#   mode            = "accept"
-# }
-
-# resource "linode_nodebalancer_node" "talosctlapi_nodes" {
-#   nodebalancer_id = var.gateway_nodebalancer.gateway.id
-#   config_id       = [for config in var.gateway_nodebalancer.gateway.configs : config.id if config.name == "talosctl_api"][0]
-#   address         = "${local.controlplane_private_ip}:50000"
-#   label           = "${var.infra}-talosctlapi-port-lb"
-#   weight          = 100
-#   mode            = "accept"
-# }
 
 # ------------------------------------------------------------------------------

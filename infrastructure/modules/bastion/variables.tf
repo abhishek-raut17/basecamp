@@ -42,7 +42,12 @@ variable "private_key" {
 variable "devops_cd_sshkey" {
   description = "SSH Private Key to bootstrap fluxcd"
   type        = string
-  sensitive   = true
+}
+
+## Cloud provider (linode) access token
+variable "token" {
+  description = "API Token"
+  type        = string
 }
 
 ## Instance Type
