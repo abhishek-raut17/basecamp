@@ -27,20 +27,6 @@ variable "region" {
   type        = string
 }
 
-## SSH Public Key
-variable "ssh_key" {
-  description = "SSH Public Key"
-  type        = string
-  sensitive   = true
-}
-
-## SSH Private Key
-variable "ssh_private_key" {
-  description = "SSH Private Key"
-  type        = string
-  sensitive   = true
-}
-
 ## Instance Type
 variable "nodetype" {
   description = "The type (category) of compute node instance for bastion host"
@@ -60,20 +46,17 @@ variable "subnet_id" {
 }
 
 ## Static VPC ipv4 for controlplane node
-variable "controlplane_ip" {
-  description = "Static VPC ipv4 for controlplane node"
-  type        = string
+variable "vpc_ip" {
+  description = "Static VPC ipv4 for cluster node"
+  type = object({
+    controlplane = string,
+    workers      = list(string)
+  })
 }
 
-## Static VPC ipv4 for worker nodes
-variable "workers_ip" {
-  description = "Static VPC ipv4 for worker nodes"
-  type        = list(string)
-}
-
-## Cluster Firewall ID for cluster nodes
+## Firewall ID for cluster nodes
 variable "firewall_id" {
-  description = "ID of the Cluster firewall"
+  description = "Firewall rule ID for cluster nodes"
   type        = string
 }
 
@@ -92,19 +75,4 @@ variable "node_userdata" {
   })
 }
 
-## Nodebalancer details
-variable "gateway_nodebalancer" {
-  description = "Nodebalancer details for gateway access"
-  type = object({
-    gateway = object({
-      id       = string,
-      hostname = string,
-      ip       = string,
-      configs = list(object({
-        name = string,
-        id   = string
-      }))
-    })
-  })
-}
 # ------------------------------------------------------------------------------

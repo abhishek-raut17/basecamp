@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# Bastion bin: init file for initializing bastion for cluster management
+# Bastion: init file for initializing bastion for cluster management
 #
 set -euo pipefail
 
-declare -r INITD="/usr/local/bin/initd"
+declare -r INITD="/usr/local/lib/initd"
 declare -r IPHOST_REGEX='^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
 declare -r SUBNET_REGEX='^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/([0-9]|[1-2][0-9]|3[0-2])$'
 
@@ -14,13 +14,14 @@ declare -r SUBNET_REGEX='^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|
 RELEASE_VERSION="${RELEASE_VERSION:-v1.0.0}"
 VERSION="${VERSION:-v1.0.0}"
 LOG_LEVEL=${LOG_LEVEL:-0}
+REGION=${REGION:-us-ord}
 
-TALOS_DIR="${TALOS_DIR:-/root/.configs/.talos}"
-KUBE_DIR="${KUBE_DIR:-/root/.configs/.kube}"
+TALOS_DIR="${TALOS_DIR:-/root/.talos}"
+KUBE_DIR="${KUBE_DIR:-/root/.kube}"
 
 GIT_REPO="${GIT_REPO:-ssh://git@github.com/abhishek-raut17/basecamp.git}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-/tmp/devops_cd}"
-ADMIN_TOKEN="${ADMIN_TOKEN:-}"
+CCM_TOKEN="${CCM_TOKEN:-}"
 
 V_TALOSCTL=${V_TALOSCTL:-v1.11.2}
 V_KUBECTL=${V_KUBECTL:-v1.34.1}
@@ -34,6 +35,11 @@ FLUXCD_URL="${FLUXCD_URL:-https://fluxcd.io/install.sh}"
 HELM_URL="${HELM_URL:-https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4}"
 K8S_GATEWAY_API="${K8S_GATEWAY_API:-https://github.com/kubernetes-sigs/gateway-api/releases/download/${V_GATEWAY_API}/standard-install.yaml}"
 CERT_MNG_PLUGIN="${CERT_MNG_PLUGIN:-https://github.com/slicen/cert-manager-webhook-linode/releases/download/v0.2.0/cert-manager-webhook-linode-v0.2.0.tgz}"
+
+NGINX_DIR="${NGINX_DIR:-${INITD}/modules/nginx-gateway}"
+NGINX_CONF="${NGINX_CONF:-${NGINX_DIR}/nginx.conf}"
+NGINX_STREAM_CONF="${NGINX_STREAM_CONF:-${NGINX_DIR}/nginx-stream.conf}"
+NGINX_TUNING_CONF="${NGINX_TUNING_CONF:-${NGINX_DIR}/99-nginx-tuning.conf}"
 
 CLUSTER_NAME="${CLUSTER_NAME:-basecamp}"
 CLUSTER_SUBNET="${CLUSTER_SUBNET:-10.0.10.0/24}"
@@ -75,7 +81,7 @@ provision_prerequisites() {
 # Ensure that bastion can connect to cluster subnet ip route
 # ----------------------------------------------------------------------------
 add_route_to_cluster() {
-    log_info "Validating IP route to cluster subnet: ${CLUSTER_SUBNET}"
+    log_info "Validating IP route from bastion/gateway to cluster subnet: ${CLUSTER_SUBNET}"
     ip route add ${CLUSTER_SUBNET} dev eth1 2>/dev/null || echo ' --- Route may already exist --- '
     ip route show
 }
@@ -95,6 +101,8 @@ setup_env_vars() {
     if ! grep -qxF "export KUBECONFIG=${KUBE_DIR}/config" /root/.bashrc 2>/dev/null; then
         echo "export KUBECONFIG=${KUBE_DIR}/config" >> /root/.bashrc
     fi
+
+    source /root/.bashrc
 }
 
 # ----------------------------------------------------------------------------
@@ -108,7 +116,7 @@ setup_talosctl() {
         log_debug "File /tmp/talosconfig does not exist"
     fi
 
-    log_info "Setting up talos nodes and endpoint for cluster: ${CLUSTER_ENDPOINT}"
+    log_info "Setting up talos nodes with cluster endpoint: ${CLUSTER_ENDPOINT}"
     if ! talosctl config nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config 2>&1; then
         log_error "Failed to set talos nodes"
         exit 1
@@ -127,6 +135,58 @@ setup_talosctl() {
 setup_kubectl() {
     log_info "Generating kubeconfig for cluster node access"
     talosctl kubeconfig --nodes ${CLUSTER_ENDPOINT} --talosconfig ${TALOS_DIR}/config --merge --force
+}
+
+# ----------------------------------------------------------------------------
+# Setup Lindoe Cloud controller manager for provisioning CSI driver
+# ----------------------------------------------------------------------------
+setup_ccm_controller() {
+    log_info "Deploying Linode CCM controller"
+    helm repo add ccm-linode https://linode.github.io/linode-cloud-controller-manager/
+    helm repo update ccm-linode
+
+    if ! resource_exists "ds" "ccm-linode"; then
+
+        log_debug "Installing ccm-linode controller"
+        helm install ccm-linode ccm-linode/ccm-linode \
+            --namespace kube-system \
+            --set secretRef.name=linode-token \
+            --set secretRef.apiTokenRef=token \
+            --set secretRef.regionRef=region \
+            --set image.pullPolicy=IfNotPresent \
+            --set logVerbosity=3 \
+            --wait \
+            --timeout 5m
+    fi
+            
+    if ! kubectl wait --for=condition=ready pod -l app=ccm-linode -n kube-system --timeout=300s; then
+        log_error "fatal error: timeout waiting for linode ccm-linode controller pod to be ready"
+        exit 1
+    fi
+}
+
+# ----------------------------------------------------------------------------
+# Setup Lindoe block storage driver to manage CSI for cluster
+# ----------------------------------------------------------------------------
+setup_csi_driver() {
+    log_info "Deploying Linode blockstorage CSI driver"
+    helm repo add linode-csi https://linode.github.io/linode-blockstorage-csi-driver/
+    helm repo update linode-csi
+
+    if ! resource_exists "ds" "csi-linode-node"; then
+
+        log_debug "Installing linode-csi controller"
+        helm install linode-csi-driver linode-csi/linode-blockstorage-csi-driver \
+            --set apiToken="${CCM_TOKEN}" \
+            --set region="${REGION}" \
+            --wait \
+            --timeout 5m
+    fi
+            
+    if ! kubectl wait --for=condition=ready pod -l app=csi-linode-node -n kube-system --timeout=300s; then
+        log_error "fatal error: timeout waiting for linode csi-linode pod(s) to be ready."
+        exit 1
+    fi
 }
 
 # ----------------------------------------------------------------------------
@@ -173,6 +233,52 @@ bootstrap_fluxcd() {
             --author-email="flux-bot@sigdep.cloud" \
             --path=clusters/${CLUSTER_NAME}-0 \
             --silent
+    fi
+}
+
+# ----------------------------------------------------------------------------
+# Bootstrap fluxCD for GitOps
+# ----------------------------------------------------------------------------
+setup_cluster_gateway() {
+    log_info "Initializing nginx gateway as TCP passthrough for cluster"
+
+    if ! dpkg -l | grep "nginx" 2>&1; then
+        log_debug "Nginx not found. Installing..."
+        apt update
+        apt install -y nginx libnginx-mod-stream
+    else
+        log_debug "Nginx is already installed."
+    fi
+
+    systemctl stop nginx
+
+    # Setup root config for nginx
+    if ! exists "file" ${NGINX_CONF}; then
+        log_warn "Root config for nginx doesnt exists at: ${NGINX_CONF}."
+        exit 1
+    else
+        log_debug "Found root config for nginx at: ${NGINX_CONF}"
+        cp ${NGINX_CONF} /etc/nginx/nginx.conf
+    fi
+
+    # Setup kernel tuning config for nginx TCP passthrough
+    if ! exists "file" ${NGINX_TUNING_CONF}; then
+        log_warn "Kernel tuning config for nginx doesnt exists at: ${NGINX_TUNING_CONF}."
+        exit 1
+    else
+        log_debug "Found kernel tuning config for nginx at: ${NGINX_TUNING_CONF}"
+        cp ${NGINX_TUNING_CONF} /etc/sysctl.d/99-nginx-tuning.conf
+    fi
+
+    systemctl enable nginx
+    systemctl start nginx
+
+    if systemctl is-active --quiet nginx; then
+        log_debug "Nginx is running successfully!"
+    else
+        log_debug "Nginx failed to start. Checking status..."
+        systemctl status nginx
+        exit 1
     fi
 }
 
@@ -247,12 +353,8 @@ parse_args() {
                 CLUSTER_ENDPOINT="$2"; shift 2;;
             --cluster-subnet)
                 CLUSTER_SUBNET="$2"; shift 2;;
-            --admin-token)
-                ADMIN_TOKEN="$2"; shift 2;;
-            --talos-dir)
-                TALOS_DIR="$2"; shift 2;;
-            --kube-dir)
-                KUBE_DIR="$2"; shift 2;;
+            --ccm-token)
+                CCM_TOKEN="$2"; shift 2;;
             --sshkey-path)
                 SSH_KEY_PATH="$2"; shift 2;;
             --talos-version)
@@ -286,13 +388,13 @@ main() {
     # Parse command-line arguments to allow inline overrides
     parse_args "$@"
 
-    if [[ -z $ADMIN_TOKEN ]]; then
-        log_error "fatal error: No Admin token provided."
+    if [[ -z $CCM_TOKEN ]]; then
+        log_error "fatal error: No Cloud Controller Manager (CCM) token provided for resource creation."
         exit 1
     fi
 
     # Display banner
-    log_section "Setup machine configs for cluster nodes"
+    log_section "Setup bastion host to manage cluster: ${CLUSTER_NAME}"
     log_info "Release version   : ${RELEASE_VERSION}"
     log_info "Binary version    : ${VERSION}"
     echo ""
@@ -323,26 +425,42 @@ main() {
     # Step 8: Label worker nodes with node-role label
     kubectl label nodes -l 'node-role.kubernetes.io/control-plane!=' node-role.kubernetes.io/worker=
 
-    # Step 11: Bootstrap fluxCD for GitOps styled cluster resource management
-    bootstrap_fluxcd
-
-    # Step 10: Install Kubernetes Gateway API CRDs
-    log_info "Applying kubernetes Gateway API: version: ${V_GATEWAY_API}"
-    kubectl apply -f ${K8S_GATEWAY_API}
-
-    # Step 11: Install Cert-manager-linode plugin
-    log_info "Applying cert-manager-webhook"
+    # Step 9: Create 'security' namespace for cert manager
+    log_info "Creating 'security' namespace"
     if ! resource_exists "namespace" "security"; then
         kubectl create namespace security --dry-run=client -o yaml | kubectl apply -f -
     fi
 
-    # Step 12: Generate secrets to edit DNS zone file for DNS-01 challenges
-    log_info "Generating DNS provider API token secrets"
-    kubectl create secret generic linode-credentials --namespace=security --from-literal=token=${ADMIN_TOKEN} \
+    # Step 10: Generate secrets to edit DNS zone file for DNS-01 challenges and for CSI provisioning
+    log_info "Generating CCM API token secrets"
+    kubectl create secret generic linode-credentials --namespace=security --from-literal=token=${CCM_TOKEN} \
         --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create secret generic linode-token --namespace=kube-system \
+        --from-literal=token=${CCM_TOKEN} \
+        --from-literal=region=${REGION} \
+        --dry-run=client -o yaml | kubectl apply -f -
+
+    # Step 11: Deploy Linode CCM controller for provisioning CSI driver
+    setup_ccm_controller
+
+    # Step 12: Deploy Linode Blokstorage CSI driver
+    setup_csi_driver
+
+    # # Step 13: Bootstrap fluxCD for GitOps styled cluster resource management
+    bootstrap_fluxcd
+
+    # Step 14: Install Kubernetes Gateway API CRDs
+    log_info "Applying kubernetes Gateway API: version: ${V_GATEWAY_API}"
+    kubectl apply -f ${K8S_GATEWAY_API}
 
     # Step 13: Deploy webhook plugin for cert-manager for linode DNS provider
     if ! resource_exists "deploy" "cert-manager-webhook-linode"; then
+
+        if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=300s; then
+            log_error "fatal error: timeout waiting for cert-manager-webhook to be ready"
+            exit 1
+        fi
+
         helm install cert-manager-webhook-linode \
             --namespace=security \
             --set certManager.namespace=security \
@@ -350,8 +468,11 @@ main() {
             ${CERT_MNG_PLUGIN}
     fi
 
+    # Step 14: Install Nginx gateway as a passthrough TCP for cluster nodes
+    setup_cluster_gateway
+
     # Success
-    log_success "Bastion host setup completed successfully"
+    log_success "Bastion host and Cluster gateway setup completed successfully"
     log_section "Cluster setup completed: Endpoint: ${CLUSTER_ENDPOINT}"
 
     # Cleanup

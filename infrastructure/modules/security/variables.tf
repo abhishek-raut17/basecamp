@@ -17,8 +17,14 @@ variable "infra" {
 variable "subnet" {
   description = "CIDR block for the Cluster subnet"
   type = object({
-    cluster = string,
-    dmz     = string
+    cluster = object({
+      cidr = string,
+      id   = string
+    })
+    dmz = object({
+      cidr = string,
+      id   = string
+    })
   })
 }
 # ------------------------------------------------------------------------------
