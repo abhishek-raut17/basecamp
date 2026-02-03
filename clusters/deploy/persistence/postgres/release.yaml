@@ -1,0 +1,114 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: postgres
+  namespace: persistence
+spec:
+  interval: 10m
+  timeout: 5m
+  releaseName: postgresql
+  
+  chart:
+    spec:
+      chart: postgresql
+      version: ">=18.0.0 <19.0.0"
+      sourceRef:
+        kind: OCIRepository
+        name: postgres
+        namespace: flux-system
+      interval: 12h
+  
+  # Upgrade configuration
+  upgrade:
+    remediation:
+      retries: 3
+    cleanupOnFail: true
+  
+  # Rollback configuration
+  rollback:
+    timeout: 5m
+    cleanupOnFail: true
+  
+  values:
+    ## For standalone: single primary instance (no read replicas)
+    architecture: standalone
+    
+    ## Authentication configuration
+    auth:
+      ## Use existing secret for passwords for admin 'postgres' user
+      existingSecret: "postgres-admin-secrets"
+    
+    ## Primary PostgreSQL configuration
+    primary:
+      ## Resource limits and requests
+      resources:
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+      
+      ## Persistence configuration
+      persistence:
+        enabled: true
+        storageClass: ""  # Use default storage class
+        accessModes: ["ReadWriteOnce"]
+        size: 10Gi
+      
+      ## PostgreSQL configuration parameters
+      extendedConfiguration: |
+        max_connections = 200
+        shared_buffers = 256MB
+      # effective_cache_size = 768MB
+      # maintenance_work_mem = 64MB
+      # checkpoint_completion_target = 0.9
+      # wal_buffers = 16MB
+      # default_statistics_target = 100
+      # random_page_cost = 1.1
+      # effective_io_concurrency = 200
+      # work_mem = 655kB
+      # min_wal_size = 1GB
+      # max_wal_size = 4GB
+    
+    ## Backup configuration (optional)
+    backup:
+      enabled: false
+      cronjob:
+        schedule: "@daily"
+        storage:
+          enabled: false
+          size: 20Gi
+    
+    ## Metrics configuration (Prometheus)
+    metrics:
+      enabled: false
+      
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
+      
+      serviceMonitor:
+        enabled: false
+        interval: 30s
+    
+    ## NetworkPolicy
+    networkPolicy:
+      enabled: false
+      ## Allow connections from specific namespaces
+      # ingress:
+      #   - from:
+      #     - namespaceSelector:
+      #         matchLabels:
+      #           name: my-app-namespace
+    
+    ## Service configuration
+    service:
+      type: ClusterIP
+      ports:
+        postgresql: 5432
