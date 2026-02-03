@@ -227,11 +227,11 @@ bootstrap_fluxcd() {
 
         flux bootstrap git \
             --url=${GIT_REPO} \
-            --branch=deployment \
+            --branch=development \
             --private-key-file=${SSH_KEY_PATH} \
             --author-name="Flux Bot" \
             --author-email="flux-bot@sigdep.cloud" \
-            --path=clusters/${CLUSTER_NAME}-0 \
+            --path=clusters/deploy \
             --silent
     fi
 }
@@ -305,7 +305,7 @@ Options:
   -h, --help                    Show this help message
 
 Examples:
-  ${0##*/} --cluster-name basecamp --cluster-endpoint 10.0.10.10 --cluster-subnet 10.0.10.0/24 --admin-token <token>
+  ${0##*/} --cluster-name basecamp --cluster-endpoint 10.0.10.10 --cluster-subnet 10.0.10.0/24 --ccm-token <token>
 
 EOF
 }
