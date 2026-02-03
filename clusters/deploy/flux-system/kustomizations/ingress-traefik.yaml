@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m0s
-  path: ./clusters/basecamp-0/ingress
+  path: ./clusters/deploy/ingress
   prune: true
   sourceRef:
     kind: GitRepository
