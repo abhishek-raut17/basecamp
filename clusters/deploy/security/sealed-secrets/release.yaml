@@ -1,0 +1,37 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sealed-secrets-controller
+  namespace: security
+spec:
+  releaseName: sealed-secrets-controller
+  interval: 1h
+  chart:
+    spec:
+      chart: sealed-secrets
+      sourceRef:
+        kind: OCIRepository
+        name: sealed-secrets
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    # 1. ESSENTIAL: Overrides the default naming logic.
+    # Without this, the service might be named 'sealed-secrets-controller-sealed-secrets'
+    # which breaks the default 'kubeseal' CLI discovery.
+    fullnameOverride: "sealed-secrets-controller"
+
+    # 2. SECURITY/PROD: Explicitly enable RBAC (default is true, but good to be explicit)
+    rbac:
+      create: true
+      clusterRole: true
+
+    # 3. RESOURCE TUNING: Bitnami default is 'nano'. 
+    # For production with many secrets, 'micro' or 'small' is safer.
+    resourcesPreset: "micro"
+
+    # 4. MONITORING: Optional, set to true if you use Prometheus
+    metrics:
+      enabled: false
