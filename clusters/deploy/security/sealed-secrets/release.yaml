@@ -6,6 +6,7 @@ metadata:
 spec:
   releaseName: sealed-secrets-controller
   interval: 1h
+  timeout: 5m
   chart:
     spec:
       chart: sealed-secrets
