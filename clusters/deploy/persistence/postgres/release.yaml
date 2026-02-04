@@ -1,7 +1,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: postgres
+  name: postgresql
   namespace: persistence
 spec:
   interval: 10m
@@ -14,7 +14,7 @@ spec:
       version: 18.2.3
       sourceRef:
         kind: HelmRepository
-        name: postgres
+        name: bitnami
         namespace: flux-system
   
   # Upgrade configuration
