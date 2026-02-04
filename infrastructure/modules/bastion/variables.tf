@@ -62,17 +62,29 @@ variable "nodeimage" {
   type        = string
 }
 
-# ## Version ID for talosctl
-# variable "talosctl_version" {
-#   description = "Version ID for talosctl"
-#   type        = string
-# }
+## Version ID for talosctl
+variable "talosctl_version" {
+  description = "Version ID for talosctl"
+  type        = string
+}
 
-# ## Version ID for kubectl
-# variable "kubectl_version" {
-#   description = "Version ID for kubectl"
-#   type        = string
-# }
+## Version ID for kubectl
+variable "kubectl_version" {
+  description = "Version ID for kubectl"
+  type        = string
+}
+
+## Version ID for k8s-gateway-api
+variable "k8s_gateway_version" {
+  description = "Version ID for k8s-gateway-api"
+  type        = string
+}
+
+## Version ID for cert-manager-plugin
+variable "cert_manager_plugin_version" {
+  description = "Version ID for cert-manager-plugin"
+  type        = string
+}
 
 ## Cluster endpoint
 variable "cluster_endpoint" {
