@@ -14,27 +14,28 @@ declare -r SUBNET_REGEX='^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|
 RELEASE_VERSION="${RELEASE_VERSION:-v1.0.0}"
 VERSION="${VERSION:-v1.0.0}"
 LOG_LEVEL=${LOG_LEVEL:-0}
-REGION=${REGION:-us-ord}
+CLOUD_PROVIDER_REGION=${CLOUD_PROVIDER_REGION:-us-ord}
 
 TALOS_DIR="${TALOS_DIR:-/root/.talos}"
 KUBE_DIR="${KUBE_DIR:-/root/.kube}"
 
 GIT_REPO="${GIT_REPO:-ssh://git@github.com/abhishek-raut17/basecamp.git}"
-SSH_KEY_PATH="${SSH_KEY_PATH:-/tmp/devops_cd}"
-CCM_TOKEN="${CCM_TOKEN:-}"
+FLUXCD_SSHKEY_PATH="${FLUXCD_SSHKEY_PATH:-/tmp/devops_cd}"
+CLOUD_PROVIDER_PAT="${CLOUD_PROVIDER_PAT:-}"
 
-V_TALOSCTL=${V_TALOSCTL:-v1.11.2}
-V_KUBECTL=${V_KUBECTL:-v1.34.1}
-V_FLUXCD=${V_FLUXCD:-}
-V_HELM=${V_HELM:-}
-V_GATEWAY_API=${V_GATEWAY_API:-v1.4.1}
+VERSION_TALOSCTL=${VERSION_TALOSCTL:-v1.11.2}
+VERSION_KUBECTL=${VERSION_KUBECTL:-v1.34.1}
+VERSION_FLUXCD=${VERSION_FLUXCD:-}
+VERSION_HELM=${VERSION_HELM:-}
+VERSION_GATEWAY_API=${VERSION_GATEWAY_API:-v1.4.1}
+VERSION_CRT_MNG_PLUGIN=${VERSION_CRT_MNG_PLUGIN:-v0.2.0}
 
-TALOSCTL_URL="${TALOSCTL_URL:-https://github.com/siderolabs/talos/releases/download/${V_TALOSCTL}}"
-KUBECTL_URL="${KUBECTL_URL:-https://dl.k8s.io/release/${V_KUBECTL}/bin/linux/amd64}"
+TALOSCTL_URL="${TALOSCTL_URL:-https://github.com/siderolabs/talos/releases/download/${VERSION_TALOSCTL}}"
+KUBECTL_URL="${KUBECTL_URL:-https://dl.k8s.io/release/${VERSION_KUBECTL}/bin/linux/amd64}"
 FLUXCD_URL="${FLUXCD_URL:-https://fluxcd.io/install.sh}"
 HELM_URL="${HELM_URL:-https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4}"
-K8S_GATEWAY_API="${K8S_GATEWAY_API:-https://github.com/kubernetes-sigs/gateway-api/releases/download/${V_GATEWAY_API}/standard-install.yaml}"
-CERT_MNG_PLUGIN="${CERT_MNG_PLUGIN:-https://github.com/slicen/cert-manager-webhook-linode/releases/download/v0.2.0/cert-manager-webhook-linode-v0.2.0.tgz}"
+K8S_GATEWAY_API="${K8S_GATEWAY_API:-https://github.com/kubernetes-sigs/gateway-api/releases/download/${VERSION_GATEWAY_API}/standard-install.yaml}"
+CERT_MNG_PLUGIN="${CERT_MNG_PLUGIN:-https://github.com/slicen/cert-manager-webhook-linode/releases/download/${VERSION_CRT_MNG_PLUGIN}/cert-manager-webhook-linode-${VERSION_CRT_MNG_PLUGIN}.tgz}"
 
 NGINX_DIR="${NGINX_DIR:-${INITD}/modules/nginx-gateway}"
 NGINX_CONF="${NGINX_CONF:-${NGINX_DIR}/nginx.conf}"
@@ -177,8 +178,8 @@ setup_csi_driver() {
 
         log_debug "Installing linode-csi controller"
         helm install linode-csi-driver linode-csi/linode-blockstorage-csi-driver \
-            --set apiToken="${CCM_TOKEN}" \
-            --set region="${REGION}" \
+            --set apiToken="${CLOUD_PROVIDER_PAT}" \
+            --set region="${CLOUD_PROVIDER_REGION}" \
             --wait \
             --timeout 5m
     fi
@@ -215,20 +216,20 @@ bootstrap_fluxcd() {
     if command -v flux >/dev/null 2>&1; then
         log_info "Bootstraping FluxCD for git repo: ${GIT_REPO}"
 
-        if ! exists "file" ${SSH_KEY_PATH}; then
-            log_debug "SSH key for devops_cd doesnt exists at: ${SSH_KEY_PATH}. Copy .pub file for deploy key"
-            ssh-keygen -t ed25519 -f ${SSH_KEY_PATH} -N "" -C "fluxcd-devops" || {
+        if ! exists "file" ${FLUXCD_SSHKEY_PATH}; then
+            log_debug "SSH key for devops_cd doesnt exists at: ${FLUXCD_SSHKEY_PATH}. Copy .pub file for deploy key"
+            ssh-keygen -t ed25519 -f ${FLUXCD_SSHKEY_PATH} -N "" -C "fluxcd-devops" || {
                 log_error "Cannot find or generate ssh key to bootstrap fluxcd"
                 exit 1
             }
         else
-            log_debug "Found SSH key for FluxCD bootstrap at: ${SSH_KEY_PATH}"
+            log_debug "Found SSH key for FluxCD bootstrap at: ${FLUXCD_SSHKEY_PATH}"
         fi
 
         flux bootstrap git \
             --url=${GIT_REPO} \
             --branch=development \
-            --private-key-file=${SSH_KEY_PATH} \
+            --private-key-file=${FLUXCD_SSHKEY_PATH} \
             --author-name="Flux Bot" \
             --author-email="flux-bot@sigdep.cloud" \
             --path=clusters/deploy \
@@ -290,19 +291,17 @@ usage() {
 Usage: ${0##*/} [OPTIONS]
 
 Options:
-  --cluster-name <name>         Cluster name (default: ${CLUSTER_NAME})
-  --cluster-endpoint <host>     Cluster endpoint (default: ${CLUSTER_ENDPOINT})
-  --cluster-subnet <cidr>       Cluster subnet (default: ${CLUSTER_SUBNET})
-  --talos-dir <path>            Path for talos configs (default: ${TALOS_DIR})
-  --kube-dir <path>             Path for kube configs (default: ${KUBE_DIR})
-  --sshkey-path <path>          SSH key path (default: ${SSH_KEY_PATH})
-  --talos-version <version>     Talos version (default: ${V_TALOSCTL})
-  --kube-version <version>      Kubectl version (default: ${V_KUBECTL})
-  --fluxcd-version <version>    FluxCD version (default: ${V_FLUXCD})
-  --helm-version <version>      Helm version (default: ${V_HELM})
-  --git-repo <url>              Git repository URL (default: ${GIT_REPO})
-  --admin-token <token>         Admin token for DNS provider challenges
-  -h, --help                    Show this help message
+  --cluster-name <name>                         Cluster name (default: ${CLUSTER_NAME})
+  --cluster-endpoint <host>                     Cluster endpoint (default: ${CLUSTER_ENDPOINT})
+  --cluster-subnet <cidr>                       Cluster subnet (default: ${CLUSTER_SUBNET})
+  --ccm-token <token>                           Admin token for DNS provider challenges
+  --sshkey-path <path>                          SSH key path (default: ${FLUXCD_SSHKEY_PATH})
+  --talos-version <version>                     Talos version (default: ${VERSION_TALOSCTL})
+  --kube-version <version>                      Kubectl version (default: ${VERSION_KUBECTL})
+  --k8s-gateway-version <version>               Kubernetes gateway API version (default: ${VERSION_GATEWAY_API})
+  --cert-manager-plugin-version <version>       kubernetes cert manager plugin version (default: ${VERSION_CRT_MNG_PLUGIN})
+  --git-repo <url>                              Git repository URL (default: ${GIT_REPO})
+  -h, --help                                    Show this help message
 
 Examples:
   ${0##*/} --cluster-name basecamp --cluster-endpoint 10.0.10.10 --cluster-subnet 10.0.10.0/24 --ccm-token <token>
@@ -354,17 +353,17 @@ parse_args() {
             --cluster-subnet)
                 CLUSTER_SUBNET="$2"; shift 2;;
             --ccm-token)
-                CCM_TOKEN="$2"; shift 2;;
+                CLOUD_PROVIDER_PAT="$2"; shift 2;;
             --sshkey-path)
-                SSH_KEY_PATH="$2"; shift 2;;
+                FLUXCD_SSHKEY_PATH="$2"; shift 2;;
             --talos-version)
-                V_TALOSCTL="$2"; shift 2;;
+                VERSION_TALOSCTL="$2"; shift 2;;
             --kube-version)
-                V_KUBECTL="$2"; shift 2;;
-            --fluxcd-version)
-                V_FLUXCD="$2"; shift 2;;
-            --helm-version)
-                V_HELM="$2"; shift 2;;
+                VERSION_KUBECTL="$2"; shift 2;;
+            --k8s-gateway-version)
+                VERSION_GATEWAY_API="$2"; shift 2;;
+            --cert-manager-plugin-version)
+                VERSION_CRT_MNG_PLUGIN="$2"; shift 2;;
             --git-repo)
                 GIT_REPO="$2"; shift 2;;
             -h|--help)
@@ -388,7 +387,7 @@ main() {
     # Parse command-line arguments to allow inline overrides
     parse_args "$@"
 
-    if [[ -z $CCM_TOKEN ]]; then
+    if [[ -z $CLOUD_PROVIDER_PAT ]]; then
         log_error "fatal error: No Cloud Controller Manager (CCM) token provided for resource creation."
         exit 1
     fi
@@ -433,11 +432,11 @@ main() {
 
     # Step 10: Generate secrets to edit DNS zone file for DNS-01 challenges and for CSI provisioning
     log_info "Generating CCM API token secrets"
-    kubectl create secret generic linode-credentials --namespace=security --from-literal=token=${CCM_TOKEN} \
+    kubectl create secret generic linode-credentials --namespace=security --from-literal=token=${CLOUD_PROVIDER_PAT} \
         --dry-run=client -o yaml | kubectl apply -f -
     kubectl create secret generic linode-token --namespace=kube-system \
-        --from-literal=token=${CCM_TOKEN} \
-        --from-literal=region=${REGION} \
+        --from-literal=token=${CLOUD_PROVIDER_PAT} \
+        --from-literal=region=${CLOUD_PROVIDER_REGION} \
         --dry-run=client -o yaml | kubectl apply -f -
 
     # Step 11: Deploy Linode CCM controller for provisioning CSI driver
@@ -450,7 +449,7 @@ main() {
     bootstrap_fluxcd
 
     # Step 14: Install Kubernetes Gateway API CRDs
-    log_info "Applying kubernetes Gateway API: version: ${V_GATEWAY_API}"
+    log_info "Applying kubernetes Gateway API: version: ${VERSION_GATEWAY_API}"
     kubectl apply -f ${K8S_GATEWAY_API}
 
     # Step 13: Deploy webhook plugin for cert-manager for linode DNS provider

@@ -50,18 +50,6 @@ variable "linode_token" {
   }
 }
 
-## Github PAT for fluxcd git access
-variable "git_token" {
-  description = "Github PAT for fluxcd git access"
-  type        = string
-  sensitive   = false
-
-  validation {
-    condition     = length(var.git_token) > 0
-    error_message = "Github PAT must be provided."
-  }
-}
-
 ## Git repository for deployment manifests
 variable "git_repo" {
   description = "Git repository for deployment manifests"
@@ -171,6 +159,28 @@ variable "v_kubectl" {
   validation {
     condition     = length(var.v_kubectl) > 0 && startswith(var.v_kubectl, "v")
     error_message = "Version ID for kubectl must be provided"
+  }
+}
+
+## Version ID for k8s-gateway-api
+variable "v_k8s_gateway" {
+  description = "Version ID for k8s-gateway-api"
+  type        = string
+
+  validation {
+    condition     = length(var.v_k8s_gateway) > 0 && startswith(var.v_k8s_gateway, "v")
+    error_message = "Version ID for k8s-gateway-api must be provided"
+  }
+}
+
+## Version ID for cert-manager-plugin
+variable "v_cert_manager_plugin" {
+  description = "Version ID for cert-manager-plugin"
+  type        = string
+
+  validation {
+    condition     = length(var.v_cert_manager_plugin) > 0 && startswith(var.v_cert_manager_plugin, "v")
+    error_message = "Version ID for cert-manager-plugin must be provided"
   }
 }
 

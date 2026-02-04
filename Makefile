@@ -59,21 +59,25 @@ prereq:
 setup:
 	@if [ ! -f $(CLUSTER_LIB)/bin/setup.sh ]; then echo "Cluster setup binary not found."; exit 1; fi
 	@$(CLUSTER_LIB)/bin/setup.sh
+	@if [ $$? -ne 0 ]; then echo "Local setup failed"; exit 1; fi
 
 # Plan infrastructure 
 plan:
 	@if [ ! -f $(CLUSTER_LIB)/bin/plan.sh ]; then echo "Cluster build plan binary not found."; exit 1; fi
 	@$(CLUSTER_LIB)/bin/plan.sh
+	@if [ $$? -ne 0 ]; then echo "Infrastructure plan build failed"; exit 1; fi
 
 # Build cluster resources
 build: prereq setup plan
 	@if [ ! -f $(CLUSTER_LIB)/bin/build.sh ]; then echo "Cluster build binary not found."; exit 1; fi
 	@$(CLUSTER_LIB)/bin/build.sh
+	@if [ $$? -ne 0 ]; then echo "Infrastructure deploy failed"; exit 1; fi
 
 # Cleanup stale resources
 clean:
 	@if [ ! -f $(LOCAL_LIB)/bin/cleanup.sh ]; then echo "Cluster setup binary not found."; exit 1; fi
 	@$(LOCAL_LIB)/bin/cleanup.sh
+	@if [ $$? -ne 0 ]; then echo "Cleanup failed"; exit 1; fi
 
 # Destroy infrastructure: (CRITICAL)
 destroy:

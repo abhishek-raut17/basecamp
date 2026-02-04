@@ -19,7 +19,7 @@ declare -r VERSION="v1.0.0"
 # Verify infrastructure build plan
 # ----------------------------------------------------------------------------
 verify_plan() {
-    local plan="${1:-$PLAN}"
+    local plan="${1:-plan-v1.tfplan}"
 
     log_debug "Verifying terraform execution plan"
     if ! exists "file" "$plan"; then
