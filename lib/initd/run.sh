@@ -53,6 +53,7 @@ provision_prerequisites() {
     local flux_url="${3:-${FLUXCD_URL}}"
     local helm_url="${4:-${HELM_URL}}"
     local kubeseal_url="${5:-${KUBESEAL_URL}}"
+    local kubeseal_tarball="${6:-kubeseal-${VERSION_KUBESEAL#v}-linux-amd64.tar.gz}"
 
     log_info "Provisioning prerequisites"
     cd $(mktemp -d)
@@ -70,8 +71,8 @@ provision_prerequisites() {
     install_tool "flux" "$flux_url"
 
     # Custom installation for kubeseal (with tar)
-    curl -OL "$kubeseal_url"
-    tar -xvzf kubeseal-${VERSION_KUBESEAL#v}-linux-amd64.tar.gz kubeseal
+    curl -L "$kubeseal_url" -o "$kubeseal_tarball"
+    tar -xvzf "$kubeseal_tarball" kubeseal
     install -m 755 kubeseal /usr/local/bin/kubeseal
 
     log_success "Provisioned prerequisites successfully"

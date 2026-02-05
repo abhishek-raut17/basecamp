@@ -239,10 +239,10 @@ delete_file() {
 # Kubernetes: check if the resource exists in cluster
 # ------------------------------------------------------------------------------
 resource_exists() {
-    local resource_type=$1
-    local resource_name=$2
-    local namespace=$3
-    
+    local resource_type=${1:-}
+    local resource_name=${2:-}
+    local namespace=${3:-}
+
     if [[ -n "$namespace" ]]; then
         # Namespace provided - search in specific namespace
         if kubectl get "$resource_type" "$resource_name" -n "$namespace" &>/dev/null; then
