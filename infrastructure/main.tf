@@ -36,9 +36,9 @@ terraform {
 # as management gateway and SSH management access for cluster
 locals {
 
-  infra  = trimspace(chomp(var.project_name))
-  region = trimspace(chomp(var.region))
-  token  = trimspace(chomp(var.linode_token))
+  infra   = trimspace(chomp(var.project_name))
+  region  = trimspace(chomp(var.region))
+  token   = trimspace(chomp(var.linode_token))
   db_pass = trimspace(chomp(var.db_admin_pass))
 
   public_key  = trimspace(chomp(file(var.sshkey_path)))
