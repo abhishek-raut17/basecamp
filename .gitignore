@@ -10,8 +10,6 @@
 **/machineconfig/*
 **/*secret.yaml
 **/*secrets.yaml
-!**/*sealedsecrets-repo.yaml
-!**/*security-sealed-secrets.yaml
 !**/sealed-secrets/*
 
 ### Git ###

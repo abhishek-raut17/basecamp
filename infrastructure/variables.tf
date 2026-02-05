@@ -184,6 +184,17 @@ variable "v_cert_manager_plugin" {
   }
 }
 
+## Version ID for kubeseal
+variable "v_kubeseal" {
+  description = "Version ID for kubeseal"
+  type        = string
+
+  validation {
+    condition     = length(var.v_kubeseal) > 0 && startswith(var.v_kubeseal, "v")
+    error_message = "Version ID for kubeseal must be provided"
+  }
+}
+
 ## Worker nodes count
 variable "worker_nodes" {
   description = "Number of worker nodes in a cluster"
@@ -194,4 +205,16 @@ variable "worker_nodes" {
     error_message = "Worker node count must be provided (atleast 3 nodes required)"
   }
 }
+
+## Database Admin Password - (Postgres)
+variable "db_admin_pass" {
+  description = "Postgres database Admin Password for cluster instance"
+  type        = string
+
+  validation {
+    condition = length(var.db_admin_pass) > 5
+    error_message = "Database Admin Password must be at least 6 characters long"
+  }
+}
+
 # ------------------------------------------------------------------------------
