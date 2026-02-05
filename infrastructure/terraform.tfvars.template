@@ -13,4 +13,6 @@ v_talosctl = "${VERSION_TALOSCTL}"
 v_kubectl = "${VERSION_KUBECTL}"
 v_k8s_gateway = "${VERSION_GATEWAY_API}"
 v_cert_manager_plugin = "${VERSION_CRT_MNG_PLUGIN}"
+v_kubeseal = "${VERSION_KUBESEAL}"
 worker_nodes = ${WORKER_NODES}
+db_admin_pass = "${DB_ADMIN_PASS}"

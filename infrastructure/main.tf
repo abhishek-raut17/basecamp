@@ -39,6 +39,7 @@ locals {
   infra  = trimspace(chomp(var.project_name))
   region = trimspace(chomp(var.region))
   token  = trimspace(chomp(var.linode_token))
+  db_pass = trimspace(chomp(var.db_admin_pass))
 
   public_key  = trimspace(chomp(file(var.sshkey_path)))
   private_key = trimspace(chomp(file(replace(var.sshkey_path, ".pub", ""))))
@@ -163,6 +164,7 @@ module "bastion" {
 
   source                      = "./modules/bastion"
   token                       = local.token
+  db_admin_pass               = local.db_pass
   infra                       = local.infra
   region                      = local.region
   ssh_key                     = local.public_key
@@ -180,6 +182,7 @@ module "bastion" {
   kubectl_version             = var.v_kubectl
   k8s_gateway_version         = var.v_k8s_gateway
   cert_manager_plugin_version = var.v_cert_manager_plugin
+  kubeseal_version            = var.v_kubeseal
 }
 
 # ------------------------------------------------------------------------------
