@@ -212,7 +212,7 @@ variable "db_admin_pass" {
   type        = string
 
   validation {
-    condition = length(var.db_admin_pass) > 5
+    condition     = length(var.db_admin_pass) > 5
     error_message = "Database Admin Password must be at least 6 characters long"
   }
 }

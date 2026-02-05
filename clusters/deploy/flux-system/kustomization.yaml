@@ -6,7 +6,7 @@ resources:
 - sources
 - kustomizations/security-cert-manager.yaml
 - kustomizations/security-cluster-issuer.yaml
-- kustomizations/security-sealed-secrets.yaml
+# - kustomizations/security-sealed-secrets.yaml
 - kustomizations/ingress-traefik.yaml
 - kustomizations/dashboard-headlamp.yaml
 - kustomizations/persistence-postgres.yaml

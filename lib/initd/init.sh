@@ -38,6 +38,7 @@ HELM_URL="${HELM_URL:-https://raw.githubusercontent.com/helm/helm/main/scripts/g
 K8S_GATEWAY_API="${K8S_GATEWAY_API:-https://github.com/kubernetes-sigs/gateway-api/releases/download/${VERSION_GATEWAY_API}/standard-install.yaml}"
 CERT_MNG_PLUGIN="${CERT_MNG_PLUGIN:-https://github.com/slicen/cert-manager-webhook-linode/releases/download/${VERSION_CRT_MNG_PLUGIN}/cert-manager-webhook-linode-${VERSION_CRT_MNG_PLUGIN}.tgz}"
 KUBESEAL_URL="${KUBESEAL_URL:-https://github.com/bitnami-labs/sealed-secrets/releases/download/${VERSION_KUBESEAL}/kubeseal-${VERSION_KUBESEAL#v}-linux-amd64.tar.gz}"
+KUBESEAL_CONTOLLER_URL="${KUBESEAL_CONTOLLER_URL:-https://github.com/bitnami-labs/sealed-secrets/releases/download/${VERSION_KUBESEAL}/controller.yaml}"
 
 NGINX_DIR="${NGINX_DIR:-${INITD}/modules/nginx-gateway}"
 NGINX_CONF="${NGINX_CONF:-${NGINX_DIR}/nginx.conf}"
@@ -299,6 +300,7 @@ export_configuration() {
     export FLUXCD_URL
     export HELM_URL
     export KUBESEAL_URL
+    export KUBESEAL_CONTOLLER_URL
     export K8S_GATEWAY_API
     export CERT_MNG_PLUGIN
     export NGINX_DIR

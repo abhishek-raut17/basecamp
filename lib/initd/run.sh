@@ -27,6 +27,7 @@ declare -r INITD="/usr/local/lib/initd"
 : "${FLUXCD_URL:?FLUXCD_URL not set}"
 : "${HELM_URL:?HELM_URL not set}"
 : "${KUBESEAL_URL:?KUBESEAL_URL not set}"
+: "${KUBESEAL_CONTOLLER_URL:?KUBESEAL_CONTOLLER_URL not set}"
 : "${K8S_GATEWAY_API:?K8S_GATEWAY_API not set}"
 : "${CERT_MNG_PLUGIN:?CERT_MNG_PLUGIN not set}"
 : "${NGINX_DIR:?NGINX_DIR not set}"
@@ -54,6 +55,7 @@ provision_prerequisites() {
     local kubeseal_url="${5:-${KUBESEAL_URL}}"
 
     log_info "Provisioning prerequisites"
+    cd $(mktemp -d)
 
     # Install talosctl
     install_bin "talosctl-linux-amd64" "sha256sum.txt" "$talos_url"
@@ -143,7 +145,7 @@ setup_ccm_controller() {
     helm repo add ccm-linode https://linode.github.io/linode-cloud-controller-manager/
     helm repo update ccm-linode
 
-    if ! resource_exists "ds" "ccm-linode"; then
+    if ! resource_exists "ds" "ccm-linode" "kube-system"; then
 
         log_debug "Installing ccm-linode controller"
         helm install ccm-linode ccm-linode/ccm-linode \
@@ -171,7 +173,7 @@ setup_csi_driver() {
     helm repo add linode-csi https://linode.github.io/linode-blockstorage-csi-driver/
     helm repo update linode-csi
 
-    if ! resource_exists "ds" "csi-linode-node"; then
+    if ! resource_exists "ds" "csi-linode-node" "kube-system"; then
 
         log_debug "Installing linode-csi controller"
         helm install linode-csi-driver linode-csi/linode-blockstorage-csi-driver \
@@ -237,7 +239,7 @@ bootstrap_fluxcd() {
 # ----------------------------------------------------------------------------
 # Setup kubernetes resource: Gateway API
 # ----------------------------------------------------------------------------
-setup_cluster_gateway() {
+setup_public_gateway() {
     log_info "Initializing nginx gateway as TCP passthrough for cluster"
 
     if ! dpkg -l | grep "nginx" 2>&1; then
@@ -284,18 +286,18 @@ setup_cluster_gateway() {
 # Setup kubernetes resource: Cert-Manager-Webhook (for Linode)
 # ----------------------------------------------------------------------------
 setup_cert_manager() {
-    if ! resource_exists "deploy" "cert-manager-webhook-linode"; then
-
-        if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=300s; then
-            log_error "fatal error: timeout waiting for cert-manager-webhook to be ready"
-            exit 1
-        fi
+    if ! resource_exists "deploy" "cert-manager-webhook" "security"; then
 
         helm install cert-manager-webhook-linode \
             --namespace=security \
             --set certManager.namespace=security \
             --set deployment.logLevel=null \
             ${CERT_MNG_PLUGIN}
+    fi
+
+    if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=300s; then
+        log_error "fatal error: timeout waiting for cert-manager-webhook to be ready"
+        exit 1
     fi
 }
 
@@ -305,6 +307,11 @@ setup_cert_manager() {
 seal_k8s_secret() {
     local namespace="$1"
     local secret_name="$2"
+
+    if ! kubectl wait --for=condition=ready pod -l name=sealed-secrets-controller -n kube-system --timeout=300s; then
+        log_error "fatal error: timeout waiting for sealed-secrets-controller to be ready"
+        exit 1
+    fi
 
     if [[ -z "$namespace" ]] || [[ -z "$secret_name" ]]; then
         log_error "seal_k8s_secret: namespace and secret_name are required"
@@ -395,8 +402,8 @@ create_namespace() {
     local namespace="$1"
 
     log_info "Creating namespace: ${namespace}"
-    if ! resource_exists "namespace" "security"; then
-        kubectl create namespace security --dry-run=client -o yaml | kubectl apply -f -
+    if ! resource_exists "namespace" "${namespace}"; then
+        kubectl create namespace "${namespace}" --dry-run=client -o yaml | kubectl apply -f -
     else
         log_info "Namespace: ${namespace} already exists"
     fi
@@ -452,33 +459,37 @@ main() {
     create_namespace "ingress"
     create_namespace "dashboard"
 
-    # Step 10: Generate secrets to:
-    # 1: Edit DNS zone file for DNS-01 challenges
-    # 2: CSI provisioning
-    # 3: Postgres secrets (sealed)
+    # Step 10: Deploying custom CRDs
+    #   1: Deploy SealedSecret CRDs and sealed-secret-controller in kube-system
+    log_info "Applying kubernetes sealed-secrets controller: version: ${VERSION_KUBESEAL}"
+    kubectl apply -f ${KUBESEAL_CONTOLLER_URL}
+    #   2: Install Kubernetes Gateway API CRDs
+    log_info "Applying kubernetes Gateway API: version: ${VERSION_GATEWAY_API}"
+    kubectl apply -f ${K8S_GATEWAY_API}
+
+    # Step 11: Generate secrets to:
+    #   1: Edit DNS zone file for DNS-01 challenges
+    #   2: CSI provisioning
+    #   3: Postgres secrets (sealed)
     log_info "Generating secrets"
     create_k8s_secret "security" "linode-credentials" "token=${CLOUD_PROVIDER_PAT}"
     create_k8s_secret "kube-system" "rw-csi-token" "token=${CLOUD_PROVIDER_PAT}" "region=${CLOUD_PROVIDER_REGION}"
     create_k8s_secret "persistence" "postgres-admin-secrets" "postgres-password=${DB_ADMIN_PASS}" "password=" "replication-password=${DB_ADMIN_PASS}"    
 
-    # Step 11: Deploy Linode CCM controller for provisioning CSI driver
+    # Step 12: Deploy Linode CCM controller for provisioning CSI driver
     setup_ccm_controller
 
-    # Step 12: Deploy Linode Blokstorage CSI driver
+    # Step 13: Deploy Linode Blokstorage CSI driver
     setup_csi_driver
 
-    # # Step 13: Bootstrap fluxCD for GitOps styled cluster resource management
+    # # Step 14: Bootstrap fluxCD for GitOps styled cluster resource management
     bootstrap_fluxcd
 
-    # Step 14: Install Kubernetes Gateway API CRDs
-    log_info "Applying kubernetes Gateway API: version: ${VERSION_GATEWAY_API}"
-    kubectl apply -f ${K8S_GATEWAY_API}
-
-    # Step 13: Deploy webhook plugin for cert-manager for linode DNS provider
+    # Step 15: Deploy webhook plugin for cert-manager for linode DNS provider (post fluxcd)
     setup_cert_manager
 
-    # Step 14: Install Nginx gateway as a passthrough TCP for cluster nodes
-    setup_cluster_gateway
+    # Step 16: Install Nginx gateway as a passthrough TCP for cluster nodes
+    setup_public_gateway
 
     # Success
     log_success "Bastion host and Cluster gateway setup completed successfully"
@@ -497,9 +508,6 @@ main() {
 # This script should be called via init.sh which handles argument parsing
 # and environment configuration validation
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    # If called directly without init.sh, display error message
-    log_error "This script should be called via init.sh for proper initialization"
-    log_error "Usage: ${INITD}/init.sh [OPTIONS]"
-    exit 1
+    main "$@"
 fi
 # -------------------------------------------------------------------------------
