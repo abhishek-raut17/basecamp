@@ -50,18 +50,6 @@ variable "linode_token" {
   }
 }
 
-## Github PAT for fluxcd git access
-variable "git_token" {
-  description = "Github PAT for fluxcd git access"
-  type        = string
-  sensitive   = false
-
-  validation {
-    condition     = length(var.git_token) > 0
-    error_message = "Github PAT must be provided."
-  }
-}
-
 ## Git repository for deployment manifests
 variable "git_repo" {
   description = "Git repository for deployment manifests"
@@ -174,6 +162,39 @@ variable "v_kubectl" {
   }
 }
 
+## Version ID for k8s-gateway-api
+variable "v_k8s_gateway" {
+  description = "Version ID for k8s-gateway-api"
+  type        = string
+
+  validation {
+    condition     = length(var.v_k8s_gateway) > 0 && startswith(var.v_k8s_gateway, "v")
+    error_message = "Version ID for k8s-gateway-api must be provided"
+  }
+}
+
+## Version ID for cert-manager-plugin
+variable "v_cert_manager_plugin" {
+  description = "Version ID for cert-manager-plugin"
+  type        = string
+
+  validation {
+    condition     = length(var.v_cert_manager_plugin) > 0 && startswith(var.v_cert_manager_plugin, "v")
+    error_message = "Version ID for cert-manager-plugin must be provided"
+  }
+}
+
+## Version ID for kubeseal
+variable "v_kubeseal" {
+  description = "Version ID for kubeseal"
+  type        = string
+
+  validation {
+    condition     = length(var.v_kubeseal) > 0 && startswith(var.v_kubeseal, "v")
+    error_message = "Version ID for kubeseal must be provided"
+  }
+}
+
 ## Worker nodes count
 variable "worker_nodes" {
   description = "Number of worker nodes in a cluster"
@@ -184,4 +205,16 @@ variable "worker_nodes" {
     error_message = "Worker node count must be provided (atleast 3 nodes required)"
   }
 }
+
+## Database Admin Password - (Postgres)
+variable "db_admin_pass" {
+  description = "Postgres database Admin Password for cluster instance"
+  type        = string
+
+  validation {
+    condition     = length(var.db_admin_pass) > 5
+    error_message = "Database Admin Password must be at least 6 characters long"
+  }
+}
+
 # ------------------------------------------------------------------------------

@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- gotk-components.yaml
+- gotk-sync.yaml
+- sources
+- kustomizations/security-cert-manager.yaml
+- kustomizations/security-cluster-issuer.yaml
+# - kustomizations/security-sealed-secrets.yaml
+- kustomizations/ingress-traefik.yaml
+- kustomizations/dashboard-headlamp.yaml
+- kustomizations/persistence-postgres.yaml

@@ -155,7 +155,20 @@ resource "terraform_data" "setup_bastion" {
   # Step 5: Run initd script to setup bastion for cluster access
   provisioner "remote-exec" {
     inline = [
-      "/usr/local/lib/initd/init.sh --ccm-token ${var.token} --cluster-name ${var.infra} --cluster-endpoint ${var.cluster_endpoint} --cluster-subnet ${var.cluster_subnet} --git-repo ${var.git_repo}"
+      <<-EOF
+      /usr/local/lib/initd/init.sh --cluster-name ${var.infra} \
+        --cluster-endpoint ${var.cluster_endpoint} \
+        --cluster-subnet ${var.cluster_subnet} \
+        --ccm-token ${var.token} \
+        --postgres-admin-pass ${var.db_admin_pass} \
+        --sshkey-path /tmp/devops_cd \
+        --talos-version ${var.talosctl_version} \
+        --kube-version ${var.kubectl_version} \
+        --k8s-gateway-version ${var.k8s_gateway_version} \
+        --cert-manager-plugin-version ${var.cert_manager_plugin_version} \
+        --kubeseal-version ${var.kubeseal_version} \
+        --git-repo ${var.git_repo}
+      EOF
     ]
   }
 }

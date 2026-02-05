@@ -16,6 +16,14 @@ source "${SHARED_LIB}/bin/utils.sh"
 # ------------------------------------------------------------------------------
 declare -r VERSION="v1.0.0"
 
+VERSION_TALOSCTL=${VERSION_TALOSCTL:-v1.11.2}
+VERSION_KUBECTL=${VERSION_KUBECTL:-v1.34.1}
+V_HELM=${V_HELM:-}
+
+TALOSCTL_URL="${TALOSCTL_URL:-https://github.com/siderolabs/talos/releases/download/${VERSION_TALOSCTL}}"
+KUBECTL_URL="${KUBECTL_URL:-https://dl.k8s.io/release/${VERSION_KUBECTL}/bin/linux/amd64}"
+HELM_URL="${HELM_URL:-https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4}"
+
 # ------------------------------------------------------------------------------
 # Install prereq on localhost to generate cluster privisioning resources
 # ------------------------------------------------------------------------------
@@ -54,14 +62,14 @@ main() {
     echo ""
 
     # Check if required variables are avaiable
-    validate_required_args PROJECT_NAME GIT_REPO BIN_DIR DRY_RUN \
-        CLOUD_PROVIDER_PAT GITHUB_PAT ACCESS_SSHKEY_PATH FLUXCD_SSHKEY_PATH \
+    validate_required_args PROJECT_NAME BIN_DIR DRY_RUN \
         TALOSCONFIG KUBECONFIG \
-        TALOSCTL_URL KUBECTL_URL HELM_URL FLUXCD_URL \
-        CLOUD_PROVIDER_REGION VPC_CIDR \
+        VERSION_TALOSCTL VERSION_KUBECTL VERSION_GATEWAY_API VERSION_CRT_MNG_PLUGIN VERSION_KUBESEAL \
+        CLOUD_PROVIDER_PAT CLOUD_PROVIDER_REGION GIT_REPO \
+        ACCESS_SSHKEY_PATH FLUXCD_SSHKEY_PATH DB_ADMIN_PASS \
+        VPC_CIDR \
         NODETYPE_BASTION NODETYPE_CLUSTER \
         IMG_BASTION IMG_CLUSTER \
-        VERSION_TALOSCTL VERSION_KUBECTL \
         CLUSTER_ENDPOINT WORKER_NODES
 
     # Install CLI tools (talosctl, kubectl, helm)

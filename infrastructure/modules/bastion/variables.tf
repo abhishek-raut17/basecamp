@@ -50,6 +50,12 @@ variable "token" {
   type        = string
 }
 
+## Database Admin Password - (Postgres)
+variable "db_admin_pass" {
+  description = "Postgres database Admin Password for cluster instance"
+  type        = string
+}
+
 ## Instance Type
 variable "nodetype" {
   description = "The type (category) of compute node instance for bastion host"
@@ -62,17 +68,36 @@ variable "nodeimage" {
   type        = string
 }
 
-# ## Version ID for talosctl
-# variable "talosctl_version" {
-#   description = "Version ID for talosctl"
-#   type        = string
-# }
+## Version ID for talosctl
+variable "talosctl_version" {
+  description = "Version ID for talosctl"
+  type        = string
+}
 
-# ## Version ID for kubectl
-# variable "kubectl_version" {
-#   description = "Version ID for kubectl"
-#   type        = string
-# }
+## Version ID for kubectl
+variable "kubectl_version" {
+  description = "Version ID for kubectl"
+  type        = string
+}
+
+## Version ID for k8s-gateway-api
+variable "k8s_gateway_version" {
+  description = "Version ID for k8s-gateway-api"
+  type        = string
+}
+
+## Version ID for cert-manager-plugin
+variable "cert_manager_plugin_version" {
+  description = "Version ID for cert-manager-plugin"
+  type        = string
+}
+
+## Version ID for kubeseal
+variable "kubeseal_version" {
+  description = "Version ID for kubeseal"
+  type        = string
+
+}
 
 ## Cluster endpoint
 variable "cluster_endpoint" {

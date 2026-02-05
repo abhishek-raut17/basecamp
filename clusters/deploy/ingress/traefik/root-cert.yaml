@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: external-gateway-tls
+  namespace: ingress
+spec:
+  secretName: external-gateway-tls
+  issuerRef:
+    name: letsencrypt-dev
+    kind: ClusterIssuer
+  dnsNames:
+    - "sigdep.cloud"
+    - "*.sigdep.cloud"

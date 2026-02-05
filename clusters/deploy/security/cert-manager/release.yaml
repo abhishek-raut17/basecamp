@@ -1,0 +1,216 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cert-manager
+  namespace: security
+spec:
+  interval: 12h
+  timeout: 10m
+  chartRef:
+    kind: OCIRepository
+    name: cert-manager
+    namespace: flux-system
+
+  # Install configuration
+  install:
+    crds: Create
+    remediation:
+      retries: 3
+    timeout: 10m
+  
+  # Upgrade configuration
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    timeout: 10m
+  
+  values:
+    # Install CRDs as part of the Helm release
+    crds:
+      enabled: true
+      keep: true
+    
+    # Override namespace for ClusterIssuer resources
+    # This allows ClusterIssuers to reference secrets in the security namespace
+    clusterResourceNamespace: security
+    
+    # Global settings
+    global:
+      # Log level (0-6, 2 is recommended for production)
+      logLevel: 2
+      
+      # Leader election in security namespace
+      leaderElection:
+        namespace: security
+      
+      # RBAC configuration
+      rbac:
+        create: true
+        aggregateClusterRoles: true
+    
+    # ===== Controller Configuration =====
+    replicaCount: 1
+    
+    # Disabled for limiting CPU/MEM usage
+    #
+    # podDisruptionBudget:
+    #   enabled: true
+    #   minAvailable: 1
+    #
+    # strategy:
+    #   type: RollingUpdate
+    #   rollingUpdate:
+    #     maxSurge: 1
+    #     maxUnavailable: 0
+    
+    # Resource limits and requests
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 256Mi
+    
+    # Security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+    
+    nodeSelector:
+      node-role.kubernetes.io/worker: ""
+    
+    # Tolerations (optional - uncomment if needed)
+    # tolerations:
+    #   - key: node-role.kubernetes.io/worker
+    #     operator: Exists
+    #     effect: NoSchedule
+    
+    # Pod labels for monitoring
+    podLabels:
+      app.kubernetes.io/part-of: security
+    
+    # ===== Webhook Configuration =====
+    webhook:
+      replicaCount: 1
+      
+      # Timeout for webhook responses
+      timeoutSeconds: 30
+      
+      # Secure port for webhook (10250 for GKE private clusters)
+      securePort: 10250
+      
+      # Pod disruption budget
+      # podDisruptionBudget:
+      #   enabled: true
+      #   minAvailable: 1
+      
+      # Resource limits
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 128Mi
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+      
+      # Network policy for webhook (optional)
+      networkPolicy:
+        enabled: false
+      
+      # Namespace selector to exclude certain namespaces from validation
+      validatingWebhookConfiguration:
+        namespaceSelector:
+          matchExpressions:
+            - key: "cert-manager.io/disable-validation"
+              operator: "NotIn"
+              values:
+                - "true"
+            - key: "kubernetes.io/metadata.name"
+              operator: "NotIn"
+              values:
+                - "kube-system"
+    
+    # ===== CA Injector Configuration =====
+    cainjector:
+      enabled: true
+      replicaCount: 1
+      
+      # Pod disruption budget
+      # podDisruptionBudget:
+      #   enabled: true
+      #   minAvailable: 1
+      
+      # Resource limits
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 256Mi
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+    
+    # ===== Feature Gates =====
+    # Enable Gateway API support for Traefik
+    config:
+      apiVersion: controller.config.cert-manager.io/v1alpha1
+      kind: ControllerConfiguration
+      enableGatewayAPI: true
+    
+    # ===== Startup API Check =====
+    startupapicheck:
+      enabled: true
+      timeout: 5m
+      
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
