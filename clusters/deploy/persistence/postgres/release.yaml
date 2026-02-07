@@ -15,6 +15,7 @@ spec:
         kind: HelmRepository
         name: bitnami
         namespace: flux-system
+      interval: 12h
   
   # Upgrade configuration
   upgrade:
