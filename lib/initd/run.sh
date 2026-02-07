@@ -151,7 +151,7 @@ setup_ccm_controller() {
         log_debug "Installing ccm-linode controller"
         helm install ccm-linode ccm-linode/ccm-linode \
             --namespace kube-system \
-            --set secretRef.name=rw-csi-token \
+            --set secretRef.name=ccm-token \
             --set secretRef.apiTokenRef=token \
             --set secretRef.regionRef=region \
             --set image.pullPolicy=IfNotPresent \
@@ -474,7 +474,7 @@ main() {
     #   3: Postgres secrets (sealed)
     log_info "Generating secrets"
     create_k8s_secret "security" "linode-credentials" "token=${CLOUD_PROVIDER_PAT}"
-    create_k8s_secret "kube-system" "rw-csi-token" "token=${CLOUD_PROVIDER_PAT}" "region=${CLOUD_PROVIDER_REGION}"
+    create_k8s_secret "kube-system" "ccm-token" "token=${CLOUD_PROVIDER_PAT}" "region=${CLOUD_PROVIDER_REGION}"
     create_k8s_secret "persistence" "postgres-admin-secrets" "postgres-password=${DB_ADMIN_PASS}" "password=" "replication-password=${DB_ADMIN_PASS}"    
 
     # Step 12: Deploy Linode CCM controller for provisioning CSI driver
