@@ -289,16 +289,18 @@ setup_public_gateway() {
 setup_cert_manager() {
     if ! resource_exists "deploy" "cert-manager-webhook" "security"; then
 
+        # CRITICAL: cert-manager-webhook needs to be running before installing cert-manager-webhook-linode
+        if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=300s; then
+            log_error "fatal error: timeout waiting for cert-manager-webhook to be ready"
+            exit 1
+        fi
+
         helm install cert-manager-webhook-linode \
             --namespace=security \
             --set certManager.namespace=security \
             --set deployment.logLevel=null \
             ${CERT_MNG_PLUGIN}
-    fi
-
-    if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=300s; then
-        log_error "fatal error: timeout waiting for cert-manager-webhook to be ready"
-        exit 1
+        
     fi
 }
 

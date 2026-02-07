@@ -485,6 +485,10 @@ ssh -i ~/.ssh/basecamp_rsa root@<bastion-ip>
 
 ---
 
+### TODO:
+1. Move postgres to use CloudNative PG operator
+2. Move redis to use operator from operator.io
+
 ## License
 
 See [LICENSE](LICENSE) file for license details.
