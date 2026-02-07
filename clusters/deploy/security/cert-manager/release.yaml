@@ -6,16 +6,10 @@ metadata:
 spec:
   interval: 12h
   timeout: 10m
-  releaseName: cert-manager
-  chart:
-    spec:
-      chart: cert-manager
-      version: 1.5.13
-      sourceRef:
-        kind: HelmRepository
-        name: bitnami
-        namespace: flux-system
-      interval: 12h
+  chartRef:
+    kind: OCIRepository
+    name: cert-manager
+    namespace: flux-system
 
   # Install configuration
   install:
@@ -33,86 +27,79 @@ spec:
     timeout: 10m
   
   values:
-    # ===== Global Configuration =====
+    # Install CRDs as part of the Helm release
+    crds:
+      enabled: true
+      keep: true
+    
+    # Override namespace for ClusterIssuer resources
+    # This allows ClusterIssuers to reference secrets in the security namespace
+    clusterResourceNamespace: security
+    
+    # Global settings
     global:
       # Log level (0-6, 2 is recommended for production)
       logLevel: 2
-    
-    # Install CRDs as part of the Helm release
-    installCRDs: true
-    
-    # Override namespace for ClusterIssuer resources
-    clusterResourceNamespace: security
-    
-    # Leader election namespace
-    leaderElection:
-      namespace: security
-    
-    # RBAC configuration
-    rbac:
-      create: true
+      
+      # Leader election in security namespace
+      leaderElection:
+        namespace: security
+      
+      # RBAC configuration
+      rbac:
+        create: true
+        aggregateClusterRoles: true
     
     # ===== Controller Configuration =====
-    controller:
-      replicaCount: 1
-      
-      # Resource limits and requests
-      resourcesPreset: "none"
-      resources:
-        requests:
-          cpu: 10m
-          memory: 32Mi
-        limits:
-          memory: 256Mi
-      
-      # Pod Security Context
-      podSecurityContext:
-        enabled: true
-        fsGroup: 1000
-        fsGroupChangePolicy: Always
-        sysctls: []
-        supplementalGroups: []
-      
-      # Container Security Context
-      containerSecurityContext:
-        enabled: true
-        seLinuxOptions: {}
-        runAsUser: 1000
-        runAsGroup: 1000
-        runAsNonRoot: true
-        privileged: false
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop:
-            - ALL
-        seccompProfile:
-          type: RuntimeDefault
-        readOnlyRootFilesystem: true
-      
-      # Node selector
-      nodeSelector:
-        node-role.kubernetes.io/worker: ""
-      
-      # Pod labels for monitoring
-      podLabels:
-        app.kubernetes.io/part-of: security
-      
-      # Enable Gateway API support for Traefik
-      extraArgs:
-        - --enable-gateway-api=true
-      
-      # Service Account - MUST be mounted for cert-manager to work
-      serviceAccount:
-        create: true
-        automountServiceAccountToken: true
-      
-      # Network Policy
-      networkPolicy:
-        enabled: false
-      
-      # Pod Disruption Budget
-      pdb:
-        create: false
+    replicaCount: 1
+    
+    # Disabled for limiting CPU/MEM usage
+    #
+    # podDisruptionBudget:
+    #   enabled: true
+    #   minAvailable: 1
+    #
+    # strategy:
+    #   type: RollingUpdate
+    #   rollingUpdate:
+    #     maxSurge: 1
+    #     maxUnavailable: 0
+    
+    # Resource limits and requests
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 256Mi
+    
+    # Security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+    
+    nodeSelector:
+      node-role.kubernetes.io/worker: ""
+    
+    # Tolerations (optional - uncomment if needed)
+    # tolerations:
+    #   - key: node-role.kubernetes.io/worker
+    #     operator: Exists
+    #     effect: NoSchedule
+    
+    # Pod labels for monitoring
+    podLabels:
+      app.kubernetes.io/part-of: security
     
     # ===== Webhook Configuration =====
     webhook:
@@ -121,13 +108,15 @@ spec:
       # Timeout for webhook responses
       timeoutSeconds: 30
       
-      # Container ports
-      containerPorts:
-        https: 10250
-        health: 6080
+      # Secure port for webhook (10250 for GKE private clusters)
+      securePort: 10250
+      
+      # Pod disruption budget
+      # podDisruptionBudget:
+      #   enabled: true
+      #   minAvailable: 1
       
       # Resource limits
-      resourcesPreset: "none"
       resources:
         requests:
           cpu: 10m
@@ -135,49 +124,49 @@ spec:
         limits:
           memory: 128Mi
       
-      # Pod Security Context
-      podSecurityContext:
-        enabled: true
-        fsGroup: 1000
-        fsGroupChangePolicy: Always
-        sysctls: []
-        supplementalGroups: []
-      
-      # Container Security Context
-      containerSecurityContext:
-        enabled: true
-        seLinuxOptions: {}
-        runAsUser: 1000
-        runAsGroup: 1000
+      # Security context
+      securityContext:
         runAsNonRoot: true
-        privileged: false
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      containerSecurityContext:
         allowPrivilegeEscalation: false
         capabilities:
           drop:
             - ALL
-        seccompProfile:
-          type: RuntimeDefault
         readOnlyRootFilesystem: true
       
-      # Service Account - MUST be mounted for webhook validation
-      serviceAccount:
-        create: true
-        automountServiceAccountToken: true
-      
-      # Network Policy
+      # Network policy for webhook (optional)
       networkPolicy:
         enabled: false
       
-      # Pod Disruption Budget
-      pdb:
-        create: false
+      # Namespace selector to exclude certain namespaces from validation
+      validatingWebhookConfiguration:
+        namespaceSelector:
+          matchExpressions:
+            - key: "cert-manager.io/disable-validation"
+              operator: "NotIn"
+              values:
+                - "true"
+            - key: "kubernetes.io/metadata.name"
+              operator: "NotIn"
+              values:
+                - "kube-system"
     
     # ===== CA Injector Configuration =====
     cainjector:
+      enabled: true
       replicaCount: 1
       
+      # Pod disruption budget
+      # podDisruptionBudget:
+      #   enabled: true
+      #   minAvailable: 1
+      
       # Resource limits
-      resourcesPreset: "none"
       resources:
         requests:
           cpu: 10m
@@ -185,49 +174,43 @@ spec:
         limits:
           memory: 256Mi
       
-      # Pod Security Context
-      podSecurityContext:
-        enabled: true
-        fsGroup: 1000
-        fsGroupChangePolicy: Always
-        sysctls: []
-        supplementalGroups: []
-      
-      # Container Security Context
-      containerSecurityContext:
-        enabled: true
-        seLinuxOptions: {}
-        runAsUser: 1000
-        runAsGroup: 1000
+      # Security context
+      securityContext:
         runAsNonRoot: true
-        privileged: false
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      containerSecurityContext:
         allowPrivilegeEscalation: false
         capabilities:
           drop:
             - ALL
+        readOnlyRootFilesystem: true
+    
+    # ===== Feature Gates =====
+    # Enable Gateway API support for Traefik
+    config:
+      apiVersion: controller.config.cert-manager.io/v1alpha1
+      kind: ControllerConfiguration
+      enableGatewayAPI: true
+    
+    # ===== Startup API Check =====
+    startupapicheck:
+      enabled: true
+      timeout: 5m
+      
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
+      
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
         readOnlyRootFilesystem: true
-      
-      # Service Account - MUST be mounted for CA injection
-      serviceAccount:
-        create: true
-        automountServiceAccountToken: true
-      
-      # Network Policy
-      networkPolicy:
-        enabled: false
-      
-      # Pod Disruption Budget
-      pdb:
-        create: false
-    
-    # ===== Metrics Configuration =====
-    metrics:
-      enabled: false
-      podAnnotations:
-        prometheus.io/path: "/metrics"
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "9402"
-      serviceMonitor:
-        enabled: false
