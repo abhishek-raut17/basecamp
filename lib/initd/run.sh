@@ -290,7 +290,7 @@ setup_cert_manager() {
     if ! resource_exists "deploy" "cert-manager-webhook" "security"; then
 
         # CRITICAL: cert-manager-webhook needs to be running before installing cert-manager-webhook-linode
-        if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=300s; then
+        if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=600s; then
             log_error "fatal error: timeout waiting for cert-manager-webhook to be ready"
             exit 1
         fi
@@ -456,7 +456,7 @@ main() {
     # Step 8: Label worker nodes with node-role label
     kubectl label nodes -l 'node-role.kubernetes.io/control-plane!=' node-role.kubernetes.io/worker=
 
-    # Step 9: Create required namespaces
+    # Step 9: Create default required namespaces
     create_namespace "security"
     create_namespace "persistence"
     create_namespace "ingress"
@@ -473,11 +473,9 @@ main() {
     # Step 11: Generate secrets to:
     #   1: Edit DNS zone file for DNS-01 challenges
     #   2: CSI provisioning
-    #   3: Postgres secrets (sealed)
     log_info "Generating secrets"
     create_k8s_secret "security" "linode-credentials" "token=${CLOUD_PROVIDER_PAT}"
     create_k8s_secret "kube-system" "ccm-token" "token=${CLOUD_PROVIDER_PAT}" "region=${CLOUD_PROVIDER_REGION}"
-    create_k8s_secret "persistence" "postgres-admin-secrets" "postgres-password=${DB_ADMIN_PASS}" "password=" "replication-password=${DB_ADMIN_PASS}"    
 
     # Step 12: Deploy Linode CCM controller for provisioning CSI driver
     setup_ccm_controller

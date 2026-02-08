@@ -8,4 +8,3 @@ resources:
 - kustomizations/security-cluster-issuer.yaml
 - kustomizations/ingress-traefik.yaml
 - kustomizations/dashboard-headlamp.yaml
-- kustomizations/persistence-postgres.yaml
