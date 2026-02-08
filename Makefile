@@ -19,6 +19,7 @@ endif
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
 ROOT_DIR := $(CURDIR)
+CLUSTER_DEPLOY_DIR := $(ROOT_DIR)/clusters/deploy
 MANIFEST_LIB := $(ROOT_DIR)/manifests
 LIB := $(ROOT_DIR)/lib
 INFRA_DIR := $(ROOT_DIR)/infrastructure

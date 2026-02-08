@@ -12,4 +12,4 @@ spec:
     name: flux-system
   dependsOn:
     - name: security-cert-manager
-  timeout: 15m
+  timeout: 30m
