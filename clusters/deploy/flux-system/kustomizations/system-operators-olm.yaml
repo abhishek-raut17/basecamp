@@ -10,9 +10,4 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  dependsOn:
-    - name: security-cert-manager
-    - name: security-cluster-issuer
-    - name: ingress-traefik
-    - name: dashboard-headlamp
   timeout: 30m
