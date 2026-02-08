@@ -26,6 +26,19 @@ BaseCamp is a comprehensive Infrastructure-as-Code (IaC) project that automates 
 ### Cloud Provider
 - **Linode (Akamai) Account** with billing enabled
 - **Linode API Token** (Personal Access Token) for infrastructure provisioning
+### GitOps provider
+- **Github account** (repository for fluxcd to reconcile)
+- **SSH Key** added to account for fluxcd operations
+
+## Steps for deployment:
+1. **Create SSH keys**
+   a. Cluster admin access ssh key
+   b. FluxCD gitops ssh key
+2. **Create/Update DNS Zone file** according to the domain name (e.g.  https://sigdep.cloud)
+3. **Create Object storage bucket** for media content storage (use S3 styled buckets to support cluster standards)
+4. **Create/Update .env file and make**
+
+---
 
 ### Local Machine Requirements
 1. **Terraform** (>= 1.5.0)
@@ -471,6 +484,10 @@ ssh -i ~/.ssh/basecamp_rsa root@<bastion-ip>
 - Dry-run mode available via `DRY_RUN=1`
 
 ---
+
+### TODO:
+1. Move postgres to use CloudNative PG operator
+2. Move redis to use operator from operator.io
 
 ## License
 
