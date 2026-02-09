@@ -13,4 +13,6 @@ spec:
   dependsOn:
     - name: security-cert-manager
     - name: security-cluster-issuer
-  timeout: 15m
+    - name: system-operators-olm
+  timeout: 30m
+  wait: true

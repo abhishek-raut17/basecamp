@@ -14,3 +14,4 @@ spec:
     - name: security-cert-manager
     - name: security-cluster-issuer
   timeout: 30m
+  wait: true

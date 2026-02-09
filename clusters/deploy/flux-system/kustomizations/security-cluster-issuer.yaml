@@ -13,3 +13,4 @@ spec:
   dependsOn:
     - name: security-cert-manager
   timeout: 30m
+  wait: true
