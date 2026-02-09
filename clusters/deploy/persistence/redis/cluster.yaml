@@ -1,0 +1,61 @@
+apiVersion: redis.redis.opstreelabs.in/v1beta2
+kind: Redis
+metadata:
+  name: redis-standalone-cluster
+  namespace: persistence
+spec:
+  # Redis image
+  kubernetesConfig:
+    image: quay.io/opstree/redis:v8.4.0
+    imagePullPolicy: IfNotPresent
+
+    # Resources
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    # Secure redis with password
+    redisSecret:
+      name: redis-user-secret
+      key: password
+
+  # Security context
+  securityContext:
+    runAsUser: 1000
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+  # Pod security context
+  podSecurityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  
+  # Storage with persistence
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+        storageClassName: linode-block-storage-retain
+  
+  # Redis configuration
+  redisConfig:
+    additionalRedisConfig: redis-config
+  
+  # Redis exporter for monitoring (disabled initially)
+  redisExporter:
+    enabled: false
+    image: quay.io/opstree/redis-exporter:v1.80.2

@@ -1,0 +1,18 @@
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: redis-user-secret
+  namespace: persistence
+spec:
+  encryptedData:
+    password: AgBCGM7u7ycpuJ/FylIhRgw/ORADN4JccJccyfpzTbnQ3me7sg8eBInwlhUFXH8ckpOGq2FI+c2RElsudjwLHpdtd+tPnRfm42yzHrqmZWjJsXprnNZGQtVRZMsXh1187xMaYVt6JqdqLkcI/nATAMRnrZuQ2lifpMGsju/uNjzxIWWuWXTNjYFx47oChAN5JHXHiI/TUk1mJRi6dOpq+LJ39XIRbPsj7rfhivTzu+kvLh97mplNe/Q25ebmzUshmAfGvLqYJlcE/UR/71RIN7rU9X1TYUZYdTzzyFjcaWOMxv1uraEgqPrYlPVDu+AK2cAdAWWIPsiO03ViMhJM2vK+y6Rb8Zmw4ql/JoImCOUUTXI1Yq5YWyD26lbeqb39/WHp75tVNx0UvTalvKswMcFmKvgQDliN6KzCWE+myvVVJdWVtReMJIAGVbG+NJ7JmdV/z/y4XteunQGY/IZ6JN5mprZUVFdEgzgjkaaljRK7LELT4ffACUOs15uB6IrUsMeYZ/lrEUe30J96ajig1FNFwnH9pWr6V6SToOKjSrDTvF+mUC+8sZoRK9G52jlraBoqya83KL7tVASJ7Qv3SjUbNkxqgO4qtXbF86ghIT0CPIUEUlMH1kVRJW1eZ42AkMntww6vWYkLpILO+4j7+yu1g1mjWZP89DdgqOGzueH3YD2bARwR7I8zB1UaL8WYRVb6WNfo2HimFpySKM7ZHt1tgXuioweXxw==
+  template:
+    metadata:
+      annotations:
+        reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+        reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: nextcloud
+        reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
+        reflector.v1.k8s.emberstack.com/reflection-auto-namespaces: nextcloud
+      name: redis-user-secret
+      namespace: persistence
+    type: Opaque

@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: redis-operator
+  namespace: persistence
+spec:
+  channel: stable
+  name: redis-operator
+  source: operatorhubio-catalog
+  sourceNamespace: olm
+  installPlanApproval: Automatic
