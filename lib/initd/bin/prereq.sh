@@ -107,7 +107,7 @@ provision_prerequisites() {
     # Custom installation for kubeseal (with tar)
     curl -L "$kubeseal_url" -o "$kubeseal_tarball"
     tar -xvzf "$kubeseal_tarball" kubeseal
-    install -m 755 kubeseal /usr/local/bin/kubeseal
+    install -m 0750 kubeseal /usr/local/bin/kubeseal
 
     log_success "Provisioned prerequisites successfully"
 }

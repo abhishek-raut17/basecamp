@@ -109,8 +109,8 @@ resource "terraform_data" "setup_bastion" {
   ]
 
   triggers_replace = {
-    bastion_id        = linode_instance.bastion.id,
-    talosconfig_hash  = data.local_file.talosconfig.content_md5
+    bastion_id       = linode_instance.bastion.id,
+    talosconfig_hash = data.local_file.talosconfig.content_md5
   }
 
   connection {

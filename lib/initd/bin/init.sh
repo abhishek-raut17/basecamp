@@ -2,6 +2,9 @@
 #
 # Bastion: init file for initializing bastion for cluster management
 #
+# [Deprecated]: This is kept here for backward compactibility
+#
+
 set -euo pipefail
 
 declare -r INITD="/usr/local/lib/initd"
@@ -326,10 +329,6 @@ main() {
     log_info "Cloud region      : ${CLOUD_PROVIDER_REGION}"
     log_info "Git repo          : ${GIT_REPO}"
     echo ""
-
-    # Call main run.sh script
-    log_info "Calling main initialization script: ${INITD}/run.sh"
-    exec "${INITD}/run.sh"
 }
 
 # -------------------------------------------------------------------------------
