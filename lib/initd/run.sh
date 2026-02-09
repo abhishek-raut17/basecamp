@@ -482,8 +482,12 @@ main() {
     # Step 13: Deploy Linode Blokstorage CSI driver
     setup_csi_driver
 
-    # # Step 14: Bootstrap fluxCD for GitOps styled cluster resource management
+    # Step 14: Bootstrap fluxCD for GitOps styled cluster resource management
     bootstrap_fluxcd
+
+    # Sleeping to give flux time to reconcile
+    log_debug "Sleeping for 30s to give flux time to reconcile"
+    sleep 30
 
     # Step 15: Deploy webhook plugin for cert-manager for linode DNS provider (post fluxcd)
     setup_cert_manager
