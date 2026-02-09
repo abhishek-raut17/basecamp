@@ -1,4 +1,4 @@
-apiVersion: redis.redis.opstreelabs.in/v1beta2
+apiVersion: redis.redis.opstreelabs.in/v1beta1
 kind: Redis
 metadata:
   name: redis-standalone-cluster
@@ -6,7 +6,7 @@ metadata:
 spec:
   # Redis image
   kubernetesConfig:
-    image: quay.io/opstree/redis:v8.4.0
+    image: quay.io/opstree/redis:v7.4.7
     imagePullPolicy: IfNotPresent
 
     # Resources
