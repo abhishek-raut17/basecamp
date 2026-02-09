@@ -48,7 +48,7 @@ help:
 	@echo ""
 
 # Run all build/deploy/cleanup targets
-all: prereq setup plan build clean
+all: build clean
 
 # Check and ready localhost machine for cluster management
 prereq:

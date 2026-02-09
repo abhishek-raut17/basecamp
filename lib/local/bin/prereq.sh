@@ -98,7 +98,7 @@ main() {
     provision_prerequisites
 
     # Install custom CRDs for K8s operators if not present
-    install_k8s_operator
+    # install_k8s_operator
 
     # Generate SSH keys
     # 1. ssh key for cluster access via bastion
