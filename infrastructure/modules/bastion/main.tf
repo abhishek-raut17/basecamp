@@ -160,7 +160,6 @@ resource "terraform_data" "setup_bastion" {
         --cluster-endpoint ${var.cluster_endpoint} \
         --cluster-subnet ${var.cluster_subnet} \
         --ccm-token ${var.token} \
-        --postgres-admin-pass ${var.db_admin_pass} \
         --sshkey-path /tmp/devops_cd \
         --talos-version ${var.talosctl_version} \
         --kube-version ${var.kubectl_version} \

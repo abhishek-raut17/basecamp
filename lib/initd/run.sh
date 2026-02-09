@@ -36,7 +36,6 @@ declare -r INITD="/usr/local/lib/initd"
 : "${CLUSTER_NAME:?CLUSTER_NAME not set}"
 : "${CLUSTER_SUBNET:?CLUSTER_SUBNET not set}"
 : "${CLUSTER_ENDPOINT:?CLUSTER_ENDPOINT not set}"
-: "${DB_ADMIN_PASS:?DB_ADMIN_PASS not set}"
 
 # ------------------------------------------------------------------------------
 # Source shared modules
