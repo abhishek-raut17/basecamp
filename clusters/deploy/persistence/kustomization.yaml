@@ -4,3 +4,4 @@ resources:
 - namespace.yaml
 - operator-group.yaml
 - operators/postgres-operator.yaml
+- operators/redis-operator.yaml
