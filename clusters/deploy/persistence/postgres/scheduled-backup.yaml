@@ -1,0 +1,17 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: postgres-daily-backup
+  namespace: persistence
+spec:
+  # Daily at 2 AM UTC
+  schedule: "0 2 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: postgres-cluster
+  
+  # Backup method
+  method: barmanObjectStore
+  
+  # Immediate backup on creation (optional, set to false if not wanted)
+  immediate: false
