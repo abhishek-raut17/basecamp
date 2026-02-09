@@ -229,7 +229,7 @@ bootstrap: prereq confirm-bootstrap
 # ===============================================================================
 # Day0 Target: Steps 7-16
 # ===============================================================================
-day0: confirm-day0
+day0: init confirm-day0
 	@echo "-> Running: day0 - Operators, networking, storage, and services deployment"
 	@echo ""
 	@if [ ! -f "$(MAKEFILE_DIR)bin/day0.sh" ]; then \
