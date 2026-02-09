@@ -7,7 +7,6 @@ spec:
   # Redis image
   kubernetesConfig:
     image: quay.io/opstree/redis:v7.4.7
-    imagePullPolicy: IfNotPresent
 
     # Resources
     resources:
