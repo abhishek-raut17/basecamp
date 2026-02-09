@@ -4,7 +4,7 @@ metadata:
   name: headlamp
   namespace: dashboard
 spec:
-  interval: 12h
+  interval: 1h
   timeout: 10m
   chart:
     spec:
@@ -14,7 +14,7 @@ spec:
         kind: HelmRepository
         name: headlamp
         namespace: flux-system
-      interval: 12h
+      interval: 1h
 
   install:
     crds: Create

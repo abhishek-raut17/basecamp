@@ -49,8 +49,6 @@ CLUSTER_NAME="${CLUSTER_NAME:-basecamp}"
 CLUSTER_SUBNET="${CLUSTER_SUBNET:-10.0.10.0/24}"
 CLUSTER_ENDPOINT="${CLUSTER_ENDPOINT:-10.0.10.10}"
 
-DB_ADMIN_PASS="${DB_ADMIN_PASS:-}"
-
 # ------------------------------------------------------------------------------
 # Source shared modules
 # ------------------------------------------------------------------------------
@@ -91,11 +89,6 @@ validate_arg() {
                 log_warn "Cluster subnet not in proper ipv4 subnet format. Ref default: ${CLUSTER_SUBNET}"
             fi
             ;;
-        --postgres-admin-pass)
-            if [[ -z "$value" ]]; then
-                log_warn "Admin password for postgres instance not provided ${DB_ADMIN_PASS}"
-            fi
-            ;;
     esac
 }
 
@@ -122,11 +115,6 @@ parse_args() {
                 ;;
             --ccm-token)
                 CLOUD_PROVIDER_PAT="$2"
-                validate_arg "$1" "$2"
-                shift 2
-                ;;
-            --postgres-admin-pass)
-                DB_ADMIN_PASS="$2"
                 validate_arg "$1" "$2"
                 shift 2
                 ;;
@@ -187,7 +175,6 @@ Options:
   --cluster-endpoint <host>                     Cluster endpoint (default: ${CLUSTER_ENDPOINT})
   --cluster-subnet <cidr>                       Cluster subnet (default: ${CLUSTER_SUBNET})
   --ccm-token <token>                           Admin token for DNS provider challenges
-  --postgres-admin-pass <token>                 Admin token for postgres database
   --sshkey-path <path>                          SSH key path (default: ${FLUXCD_SSHKEY_PATH})
   --talos-version <version>                     Talos version (default: ${VERSION_TALOSCTL})
   --kube-version <version>                      Kubectl version (default: ${VERSION_KUBECTL})
@@ -198,7 +185,7 @@ Options:
   -h, --help                                    Show this help message
 
 Examples:
-  ${0##*/} --cluster-name basecamp --cluster-endpoint 10.0.10.10 --cluster-subnet 10.0.10.0/24 --ccm-token <token> --postgres-admin-pass <token>
+  ${0##*/} --cluster-name basecamp --cluster-endpoint 10.0.10.10 --cluster-subnet 10.0.10.0/24 --ccm-token <token>
 
 EOF
 }
@@ -264,11 +251,6 @@ validate_environment() {
         exit 1
     fi
 
-    if [[ -z "$DB_ADMIN_PASS" ]]; then
-        log_error "Postgres admin pass cannot be empty"
-        exit 1
-    fi
-
     log_success "Environment validation passed"
 }
 
@@ -310,7 +292,6 @@ export_configuration() {
     export CLUSTER_NAME
     export CLUSTER_SUBNET
     export CLUSTER_ENDPOINT
-    export DB_ADMIN_PASS
 }
 
 # -------------------------------------------------------------------------------
