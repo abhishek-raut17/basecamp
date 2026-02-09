@@ -8,6 +8,7 @@
 # Ignore special generated folders
 **/generated/*
 **/machineconfig/*
+**/secrets/*
 **/*secret.yaml
 **/*secrets.yaml
 !**/sealed-secrets/*

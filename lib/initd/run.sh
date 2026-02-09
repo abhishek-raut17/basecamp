@@ -2,6 +2,16 @@
 #
 # Run: Main cluster initialization and setup script
 #
+# DEPRECATED: This script has been refactored into modular components.
+# 
+# New recommended workflow:
+#   make init --ccm-token=<token> [options]
+#   make prereq
+#   make bootstrap
+#   make day0
+#
+# This script is kept for backwards compatibility but is no longer maintained.
+#
 set -euo pipefail
 
 declare -r INITD="/usr/local/lib/initd"

@@ -55,10 +55,6 @@ data "local_file" "talosconfig" {
   filename = local.talosconfig
 }
 
-data "local_file" "init" {
-  filename = "${local.bastion_initd}/init.sh"
-}
-
 # ------------------------------------------------------------------------------
 # Admin SSH Key: Import admin's SSH public key for secure access to bastion host
 # ------------------------------------------------------------------------------
@@ -109,14 +105,12 @@ resource "terraform_data" "setup_bastion" {
   depends_on = [
     linode_instance.bastion,
     linode_firewall_device.bastion_fw_device,
-    data.local_file.talosconfig,
-    data.local_file.init
+    data.local_file.talosconfig
   ]
 
   triggers_replace = {
-    bastion_id        = linode_instance.bastion.id,
-    talosconfig_hash  = data.local_file.talosconfig.content_md5,
-    bastion_init_hash = data.local_file.init.content_md5
+    bastion_id       = linode_instance.bastion.id,
+    talosconfig_hash = data.local_file.talosconfig.content_md5
   }
 
   connection {
@@ -148,28 +142,30 @@ resource "terraform_data" "setup_bastion" {
   # Step 4: Set execute permissions on initd scripts
   provisioner "remote-exec" {
     inline = [
-      "chmod 0750 /usr/local/lib/initd/*.sh"
+      "chmod 0750 /usr/local/lib/initd/bin/*.sh"
     ]
   }
 
+  # Note: Auto-setup of bastion host for cluster access is currently disabled. Manual setup and troubleshooting as needed.
+  #
   # Step 5: Run initd script to setup bastion for cluster access
-  provisioner "remote-exec" {
-    inline = [
-      <<-EOF
-      /usr/local/lib/initd/init.sh --cluster-name ${var.infra} \
-        --cluster-endpoint ${var.cluster_endpoint} \
-        --cluster-subnet ${var.cluster_subnet} \
-        --ccm-token ${var.token} \
-        --sshkey-path /tmp/devops_cd \
-        --talos-version ${var.talosctl_version} \
-        --kube-version ${var.kubectl_version} \
-        --k8s-gateway-version ${var.k8s_gateway_version} \
-        --cert-manager-plugin-version ${var.cert_manager_plugin_version} \
-        --kubeseal-version ${var.kubeseal_version} \
-        --git-repo ${var.git_repo}
-      EOF
-    ]
-  }
+  # provisioner "remote-exec" {
+  #   inline = [
+  #     <<-EOF
+  #     /usr/local/lib/initd/init.sh --cluster-name ${var.infra} \
+  #       --cluster-endpoint ${var.cluster_endpoint} \
+  #       --cluster-subnet ${var.cluster_subnet} \
+  #       --ccm-token ${var.token} \
+  #       --sshkey-path /tmp/devops_cd \
+  #       --talos-version ${var.talosctl_version} \
+  #       --kube-version ${var.kubectl_version} \
+  #       --k8s-gateway-version ${var.k8s_gateway_version} \
+  #       --cert-manager-plugin-version ${var.cert_manager_plugin_version} \
+  #       --kubeseal-version ${var.kubeseal_version} \
+  #       --git-repo ${var.git_repo}
+  #     EOF
+  #   ]
+  # }
 }
 
 # ------------------------------------------------------------------------------
