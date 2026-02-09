@@ -1,4 +1,4 @@
-apiVersion: redis.redis.opstreelabs.in/v1beta1
+apiVersion: redis.redis.opstreelabs.in/v1beta2
 kind: Redis
 metadata:
   name: redis-standalone-cluster
@@ -36,9 +36,6 @@ spec:
   podSecurityContext:
     runAsUser: 1000
     fsGroup: 1000
-    runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   
   # Storage with persistence
   storage:
