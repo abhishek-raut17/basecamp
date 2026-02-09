@@ -11,8 +11,6 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: security-cert-manager
-    - name: security-cluster-issuer
     - name: system-operators-olm
   timeout: 30m
   wait: true
