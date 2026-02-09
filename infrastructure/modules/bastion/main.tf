@@ -55,10 +55,6 @@ data "local_file" "talosconfig" {
   filename = local.talosconfig
 }
 
-data "local_file" "init" {
-  filename = "${local.bastion_initd}/init.sh"
-}
-
 # ------------------------------------------------------------------------------
 # Admin SSH Key: Import admin's SSH public key for secure access to bastion host
 # ------------------------------------------------------------------------------
@@ -109,14 +105,12 @@ resource "terraform_data" "setup_bastion" {
   depends_on = [
     linode_instance.bastion,
     linode_firewall_device.bastion_fw_device,
-    data.local_file.talosconfig,
-    data.local_file.init
+    data.local_file.talosconfig
   ]
 
   triggers_replace = {
     bastion_id        = linode_instance.bastion.id,
-    talosconfig_hash  = data.local_file.talosconfig.content_md5,
-    bastion_init_hash = data.local_file.init.content_md5
+    talosconfig_hash  = data.local_file.talosconfig.content_md5
   }
 
   connection {
@@ -148,7 +142,7 @@ resource "terraform_data" "setup_bastion" {
   # Step 4: Set execute permissions on initd scripts
   provisioner "remote-exec" {
     inline = [
-      "chmod 0750 /usr/local/lib/initd/*.sh"
+      "chmod 0750 /usr/local/lib/initd/bin/*.sh"
     ]
   }
 
