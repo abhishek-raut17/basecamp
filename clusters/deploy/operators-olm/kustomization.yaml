@@ -3,3 +3,7 @@ kind: Kustomization
 resources:
 - crds.yaml
 - olm.yaml
+- operators/operator-group.yaml
+- operators/postgres/operator.yaml
+- operators/redis/operator.yaml
+- operators/redis/extra-permission.yaml
