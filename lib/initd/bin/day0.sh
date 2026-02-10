@@ -30,11 +30,7 @@ declare -r INITD="${SCRIPT_DIR}"
 : "${GIT_REPO:?GIT_REPO not set}"
 : "${FLUXCD_SSHKEY_PATH:?FLUXCD_SSHKEY_PATH not set}"
 : "${CLOUD_PROVIDER_PAT:?CLOUD_PROVIDER_PAT not set}"
-: "${VERSION_KUBESEAL:?VERSION_KUBESEAL not set}"
-: "${VERSION_GATEWAY_API:?VERSION_GATEWAY_API not set}"
 : "${VERSION_CRT_MNG_PLUGIN:?VERSION_CRT_MNG_PLUGIN not set}"
-: "${KUBESEAL_CONTOLLER_URL:?KUBESEAL_CONTOLLER_URL not set}"
-: "${K8S_GATEWAY_API:?K8S_GATEWAY_API not set}"
 : "${CERT_MNG_PLUGIN:?CERT_MNG_PLUGIN not set}"
 : "${NGINX_DIR:?NGINX_DIR not set}"
 : "${NGINX_CONF:?NGINX_CONF not set}"
@@ -82,23 +78,6 @@ create_namespace() {
     else
         log_info "Namespace already exists: ${namespace}"
     fi
-}
-
-# ===============================================================================
-# Step 10: Setup kubernetes resource: CRDs
-# ===============================================================================
-apply_kubernetes_crds() {
-    log_info "Applying kubernetes custom resource definitions"
-
-    # Install SealedSecrets CRDs and sealed-secret-controller
-    log_debug "Applying kubernetes sealed-secrets controller: version: ${VERSION_KUBESEAL}"
-    kubectl apply -f ${KUBESEAL_CONTOLLER_URL}
-
-    # Install Kubernetes Gateway API CRDs
-    log_debug "Applying kubernetes Gateway API: version: ${VERSION_GATEWAY_API}"
-    kubectl apply -f ${K8S_GATEWAY_API}
-
-    log_success "Kubernetes CRDs applied successfully"
 }
 
 # ===============================================================================
@@ -381,19 +360,19 @@ main() {
     fi
 
     # Step 7: Verify cluster health
-    log_section "Step 1/10: Verify cluster health and status"
+    log_section "Step 1/9: Verify cluster health and status"
     verify_cluster_health
     log_success "Step 1 completed: Cluster health verified"
     echo ""
 
     # Step 8: Label worker nodes
-    log_section "Step 2/10: Label worker nodes"
+    log_section "Step 2/9: Label worker nodes"
     label_worker_nodes
     log_success "Step 2 completed: Worker nodes labeled"
     echo ""
 
     # Step 9: Create required namespaces
-    log_section "Step 3/10: Create required namespaces"
+    log_section "Step 3/9: Create required namespaces"
     create_namespace "security"
     create_namespace "persistence"
     create_namespace "ingress"
@@ -401,52 +380,46 @@ main() {
     log_success "Step 3 completed: Namespaces created"
     echo ""
 
-    # Step 10: Apply Kubernetes CRDs
-    log_section "Step 4/10: Apply Kubernetes CRDs"
-    apply_kubernetes_crds
-    log_success "Step 4 completed: CRDs applied"
-    echo ""
-
     # Step 11: Generate secrets
-    log_section "Step 5/10: Generate and seal Kubernetes secrets"
+    log_section "Step 4/9: Generate and seal Kubernetes secrets"
     log_info "Generating secrets for cloud provider and DNS challenges"
     create_k8s_secret "security" "linode-credentials" "token=${CLOUD_PROVIDER_PAT}"
     create_k8s_secret "kube-system" "ccm-token" "token=${CLOUD_PROVIDER_PAT}" "region=${CLOUD_PROVIDER_REGION}"
-    log_success "Step 5 completed: Secrets created and sealed"
+    log_success "Step 4 completed: Secrets created and sealed"
     echo ""
 
     # Step 12: Deploy Linode CCM controller
-    log_section "Step 6/10: Deploy Linode CCM controller"
+    log_section "Step 5/9: Deploy Linode CCM controller"
     setup_ccm_controller
-    log_success "Step 6 completed: Linode CCM deployed"
+    log_success "Step 5 completed: Linode CCM deployed"
     echo ""
 
     # Step 13: Deploy Linode CSI driver
-    log_section "Step 7/10: Deploy Linode BlockStorage CSI driver"
+    log_section "Step 6/9: Deploy Linode BlockStorage CSI driver"
     setup_csi_driver
-    log_success "Step 7 completed: Linode CSI deployed"
+    log_success "Step 6 completed: Linode CSI deployed"
     echo ""
 
     # Step 14: Bootstrap FluxCD
-    log_section "Step 8/10: Bootstrap FluxCD for GitOps"
+    log_section "Step 7/9: Bootstrap FluxCD for GitOps"
     bootstrap_fluxcd
 
     # Sleeping to give flux time to reconcile
     log_debug "Sleeping for 30s to give flux time to reconcile"
     sleep 30
-    log_success "Step 8 completed: FluxCD bootstrapped"
+    log_success "Step 7 completed: FluxCD bootstrapped"
     echo ""
 
     # Step 15: Deploy cert-manager webhook
-    log_section "Step 9/10: Deploy cert-manager webhook for Linode DNS"
+    log_section "Step 8/9: Deploy cert-manager webhook for Linode DNS"
     setup_cert_manager
-    log_success "Step 9 completed: Cert-manager webhook deployed"
+    log_success "Step 8 completed: Cert-manager webhook deployed"
     echo ""
 
     # Step 16: Setup Nginx gateway
-    log_section "Step 10/10: Setup Nginx gateway as TCP passthrough"
+    log_section "Step 9/9: Setup Nginx gateway as TCP passthrough"
     setup_public_gateway
-    log_success "Step 10 completed: Nginx gateway configured"
+    log_success "Step 9 completed: Nginx gateway configured"
     echo ""
 
     # Success

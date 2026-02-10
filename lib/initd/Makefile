@@ -256,6 +256,11 @@ confirm-init:
 		echo "Aborted by user"; \
 		exit 1; \
 	fi
+	@read -p "Is DNZ zone file update with bastion IP? (y/n): " confirm; \
+	if [ "$$confirm" != "y" ]; then \
+		echo "Aborted by user"; \
+		exit 1; \
+	fi
 
 confirm-prereq:
 	@echo "═══════════════════════════════════════════════════════════════"
@@ -285,6 +290,11 @@ confirm-day0:
 	@echo "═══════════════════════════════════════════════════════════════"
 	@echo ""
 	@read -p "Continue with day0? (y/n): " confirm; \
+	if [ "$$confirm" != "y" ]; then \
+		echo "Aborted by user"; \
+		exit 1; \
+	fi
+	@read -p "Are secrets sealed and deployed to development branch? (y/n): " confirm; \
 	if [ "$$confirm" != "y" ]; then \
 		echo "Aborted by user"; \
 		exit 1; \

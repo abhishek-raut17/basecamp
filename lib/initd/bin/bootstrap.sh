@@ -20,6 +20,10 @@ declare -r INITD="${SCRIPT_DIR}"
 : "${KUBE_DIR:?KUBE_DIR not set}"
 : "${CLUSTER_ENDPOINT:?CLUSTER_ENDPOINT not set}"
 : "${CLUSTER_NAME:?CLUSTER_NAME not set}"
+: "${VERSION_KUBESEAL:?VERSION_KUBESEAL not set}"
+: "${KUBESEAL_CONTOLLER_URL:?KUBESEAL_CONTOLLER_URL not set}"
+: "${VERSION_GATEWAY_API:?VERSION_GATEWAY_API not set}"
+: "${K8S_GATEWAY_API:?K8S_GATEWAY_API not set}"
 
 # ------------------------------------------------------------------------------
 # Source shared modules
@@ -55,6 +59,23 @@ setup_kubectl() {
 }
 
 # ===============================================================================
+# Step 10: Setup kubernetes resource: CRDs
+# ===============================================================================
+apply_kubernetes_crds() {
+    log_info "Applying kubernetes custom resource definitions"
+
+    # Install SealedSecrets CRDs and sealed-secret-controller
+    log_debug "Applying kubernetes sealed-secrets controller: version: ${VERSION_KUBESEAL}"
+    kubectl apply -f ${KUBESEAL_CONTOLLER_URL}
+
+    # Install Kubernetes Gateway API CRDs
+    log_debug "Applying kubernetes Gateway API: version: ${VERSION_GATEWAY_API}"
+    kubectl apply -f ${K8S_GATEWAY_API}
+
+    log_success "Kubernetes CRDs applied successfully"
+}
+
+# ===============================================================================
 # Main function
 # ===============================================================================
 main() {
@@ -82,15 +103,21 @@ main() {
     fi
 
     # Step 5: Bootstrap cluster nodes
-    log_section "Step 1/2: Bootstrap cluster (talos) nodes"
+    log_section "Step 1/3: Bootstrap cluster (talos) nodes"
     bootstrap_cluster
     log_success "Step 1 completed: Cluster bootstrapped"
     echo ""
 
     # Step 6: Setup kubeconfig
-    log_section "Step 2/2: Setup kubeconfig for cluster access"
+    log_section "Step 2/3: Setup kubeconfig for cluster access"
     setup_kubectl
     log_success "Step 2 completed: Kubeconfig generated"
+    echo ""
+
+    # Step 10: Apply Kubernetes CRDs
+    log_section "Step 3/3: Apply Kubernetes CRDs"
+    apply_kubernetes_crds
+    log_success "Step 3 completed: CRDs applied"
     echo ""
 
     # Success
