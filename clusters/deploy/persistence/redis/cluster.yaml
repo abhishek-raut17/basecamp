@@ -1,4 +1,4 @@
-apiVersion: redis.redis.opstreelabs.in/v1beta1
+apiVersion: redis.redis.opstreelabs.in/v1beta2
 kind: Redis
 metadata:
   name: redis-standalone-cluster
@@ -21,15 +21,6 @@ spec:
     redisSecret:
       name: redis-user-secret
       key: password
-
-  # Security context
-  securityContext:
-    runAsUser: 1000
-    runAsNonRoot: true
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-        - ALL
 
   # Pod security context
   podSecurityContext:
