@@ -266,24 +266,11 @@ bootstrap_fluxcd() {
 # Step 15: Setup kubernetes resource: Cert-Manager-Webhook (for Linode)
 # ===============================================================================
 setup_cert_manager() {
-    if ! resource_exists "deploy" "cert-manager-webhook" "security"; then
-
-        # CRITICAL: cert-manager-webhook needs to be running before installing cert-manager-webhook-linode
-        if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=600s; then
-            log_error "fatal error: timeout waiting for cert-manager-webhook to be ready"
-            exit 1
-        fi
-
-        helm install cert-manager-webhook-linode \
-            --namespace=security \
-            --set certManager.namespace=security \
-            --set deployment.logLevel=null \
-            ${CERT_MNG_PLUGIN}
-
-        log_success "Cert-manager webhook for Linode DNS deployed successfully"
-    else
-        log_info "Cert-manager webhook already deployed"
-    fi
+    helm install cert-manager-webhook-linode \
+        --namespace=security \
+        --set certManager.namespace=security \
+        --set deployment.logLevel=null \
+        ${CERT_MNG_PLUGIN}
 }
 
 # ===============================================================================
