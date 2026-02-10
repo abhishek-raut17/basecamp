@@ -50,12 +50,6 @@ variable "token" {
   type        = string
 }
 
-## Database Admin Password - (Postgres)
-variable "db_admin_pass" {
-  description = "Postgres database Admin Password for cluster instance"
-  type        = string
-}
-
 ## Instance Type
 variable "nodetype" {
   description = "The type (category) of compute node instance for bastion host"

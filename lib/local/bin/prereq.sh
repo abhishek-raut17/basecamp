@@ -23,6 +23,9 @@ V_HELM=${V_HELM:-}
 TALOSCTL_URL="${TALOSCTL_URL:-https://github.com/siderolabs/talos/releases/download/${VERSION_TALOSCTL}}"
 KUBECTL_URL="${KUBECTL_URL:-https://dl.k8s.io/release/${VERSION_KUBECTL}/bin/linux/amd64}"
 HELM_URL="${HELM_URL:-https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4}"
+K8S_OPERATOR_URL="${K8S_OPERATOR_URL:-https://github.com/operator-framework/operator-lifecycle-manager/releases/latest/download}"
+
+K8s_OPERATOR_DIR="${K8s_OPERATOR_DIR:-${CLUSTER_DEPLOY_DIR}/operators-olm}"
 
 # ------------------------------------------------------------------------------
 # Install prereq on localhost to generate cluster privisioning resources
@@ -48,6 +51,25 @@ provision_prerequisites() {
 }
 
 # ------------------------------------------------------------------------------
+# Install prereq on localhost to generate cluster privisioning resources
+# ------------------------------------------------------------------------------
+install_k8s_operator() {
+    log_info "Downloading and installing kubernetes CRDs for OLM operators."
+
+    local install_path="${1:-${K8s_OPERATOR_DIR}}"
+    if ! exists "file" "$install_path"; then
+        log_debug "Installing CRDs and OLM resources for OLM"
+
+        cd ${K8s_OPERATOR_DIR}
+        curl -L "${K8S_OPERATOR_URL}/crds.yaml" -o crds.yaml
+        curl -L "${K8S_OPERATOR_URL}/olm.yaml" -o olm.yaml
+    fi
+
+    log_success "Downloaded resources successfully"
+    return 0
+}
+
+# ------------------------------------------------------------------------------
 # Main function
 # ------------------------------------------------------------------------------
 main() {
@@ -66,7 +88,7 @@ main() {
         TALOSCONFIG KUBECONFIG \
         VERSION_TALOSCTL VERSION_KUBECTL VERSION_GATEWAY_API VERSION_CRT_MNG_PLUGIN VERSION_KUBESEAL \
         CLOUD_PROVIDER_PAT CLOUD_PROVIDER_REGION GIT_REPO \
-        ACCESS_SSHKEY_PATH FLUXCD_SSHKEY_PATH DB_ADMIN_PASS \
+        ACCESS_SSHKEY_PATH FLUXCD_SSHKEY_PATH \
         VPC_CIDR \
         NODETYPE_BASTION NODETYPE_CLUSTER \
         IMG_BASTION IMG_CLUSTER \
@@ -74,6 +96,9 @@ main() {
 
     # Install CLI tools (talosctl, kubectl, helm)
     provision_prerequisites
+
+    # Install custom CRDs for K8s operators if not present
+    # install_k8s_operator
 
     # Generate SSH keys
     # 1. ssh key for cluster access via bastion

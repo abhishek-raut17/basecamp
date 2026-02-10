@@ -14,4 +14,5 @@ spec:
     - name: security-cert-manager
     - name: security-cluster-issuer
     - name: ingress-traefik
-  timeout: 15m
+  timeout: 30m
+  wait: true

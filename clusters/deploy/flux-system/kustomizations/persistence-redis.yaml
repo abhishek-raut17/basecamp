@@ -1,16 +1,16 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: security-sealedsecrets
+  name: persistence-redis
   namespace: flux-system
 spec:
   interval: 10m0s
-  path: ./clusters/deploy/security/sealed-secrets
+  path: ./clusters/deploy/persistence/redis
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: security-cert-manager
-    - name: security-cluster-issuer
-  timeout: 15m
+    - name: system-operators-olm
+  timeout: 30m
+  wait: true

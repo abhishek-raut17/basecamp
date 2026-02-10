@@ -2,6 +2,16 @@
 #
 # Run: Main cluster initialization and setup script
 #
+# DEPRECATED: This script has been refactored into modular components.
+# 
+# New recommended workflow:
+#   make init --ccm-token=<token> [options]
+#   make prereq
+#   make bootstrap
+#   make day0
+#
+# This script is kept for backwards compatibility but is no longer maintained.
+#
 set -euo pipefail
 
 declare -r INITD="/usr/local/lib/initd"
@@ -36,7 +46,6 @@ declare -r INITD="/usr/local/lib/initd"
 : "${CLUSTER_NAME:?CLUSTER_NAME not set}"
 : "${CLUSTER_SUBNET:?CLUSTER_SUBNET not set}"
 : "${CLUSTER_ENDPOINT:?CLUSTER_ENDPOINT not set}"
-: "${DB_ADMIN_PASS:?DB_ADMIN_PASS not set}"
 
 # ------------------------------------------------------------------------------
 # Source shared modules
@@ -151,7 +160,7 @@ setup_ccm_controller() {
         log_debug "Installing ccm-linode controller"
         helm install ccm-linode ccm-linode/ccm-linode \
             --namespace kube-system \
-            --set secretRef.name=rw-csi-token \
+            --set secretRef.name=ccm-token \
             --set secretRef.apiTokenRef=token \
             --set secretRef.regionRef=region \
             --set image.pullPolicy=IfNotPresent \
@@ -289,16 +298,18 @@ setup_public_gateway() {
 setup_cert_manager() {
     if ! resource_exists "deploy" "cert-manager-webhook" "security"; then
 
+        # CRITICAL: cert-manager-webhook needs to be running before installing cert-manager-webhook-linode
+        if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=600s; then
+            log_error "fatal error: timeout waiting for cert-manager-webhook to be ready"
+            exit 1
+        fi
+
         helm install cert-manager-webhook-linode \
             --namespace=security \
             --set certManager.namespace=security \
             --set deployment.logLevel=null \
             ${CERT_MNG_PLUGIN}
-    fi
-
-    if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook -n security --timeout=300s; then
-        log_error "fatal error: timeout waiting for cert-manager-webhook to be ready"
-        exit 1
+        
     fi
 }
 
@@ -454,7 +465,7 @@ main() {
     # Step 8: Label worker nodes with node-role label
     kubectl label nodes -l 'node-role.kubernetes.io/control-plane!=' node-role.kubernetes.io/worker=
 
-    # Step 9: Create required namespaces
+    # Step 9: Create default required namespaces
     create_namespace "security"
     create_namespace "persistence"
     create_namespace "ingress"
@@ -471,11 +482,9 @@ main() {
     # Step 11: Generate secrets to:
     #   1: Edit DNS zone file for DNS-01 challenges
     #   2: CSI provisioning
-    #   3: Postgres secrets (sealed)
     log_info "Generating secrets"
     create_k8s_secret "security" "linode-credentials" "token=${CLOUD_PROVIDER_PAT}"
-    create_k8s_secret "kube-system" "rw-csi-token" "token=${CLOUD_PROVIDER_PAT}" "region=${CLOUD_PROVIDER_REGION}"
-    create_k8s_secret "persistence" "postgres-admin-secrets" "postgres-password=${DB_ADMIN_PASS}" "password=" "replication-password=${DB_ADMIN_PASS}"    
+    create_k8s_secret "kube-system" "ccm-token" "token=${CLOUD_PROVIDER_PAT}" "region=${CLOUD_PROVIDER_REGION}"
 
     # Step 12: Deploy Linode CCM controller for provisioning CSI driver
     setup_ccm_controller
@@ -483,8 +492,12 @@ main() {
     # Step 13: Deploy Linode Blokstorage CSI driver
     setup_csi_driver
 
-    # # Step 14: Bootstrap fluxCD for GitOps styled cluster resource management
+    # Step 14: Bootstrap fluxCD for GitOps styled cluster resource management
     bootstrap_fluxcd
+
+    # Sleeping to give flux time to reconcile
+    log_debug "Sleeping for 30s to give flux time to reconcile"
+    sleep 30
 
     # Step 15: Deploy webhook plugin for cert-manager for linode DNS provider (post fluxcd)
     setup_cert_manager

@@ -19,6 +19,7 @@ endif
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
 ROOT_DIR := $(CURDIR)
+CLUSTER_DEPLOY_DIR := $(ROOT_DIR)/clusters/deploy
 MANIFEST_LIB := $(ROOT_DIR)/manifests
 LIB := $(ROOT_DIR)/lib
 INFRA_DIR := $(ROOT_DIR)/infrastructure
@@ -47,7 +48,7 @@ help:
 	@echo ""
 
 # Run all build/deploy/cleanup targets
-all: prereq setup plan build clean
+all: build clean
 
 # Check and ready localhost machine for cluster management
 prereq:

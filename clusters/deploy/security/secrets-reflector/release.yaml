@@ -1,0 +1,15 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: reflector
+  namespace: security
+spec:
+  interval: 12h
+  timeout: 10m
+  releaseName: reflector
+  chartRef:
+    kind: OCIRepository
+    name: reflector
+    namespace: flux-system
+  targetNamespace: security
+  storageNamespace: security
