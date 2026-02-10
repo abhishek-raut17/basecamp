@@ -12,6 +12,5 @@ spec:
     name: flux-system
   dependsOn:
     - name: system-operators-olm
-    - name: persistence-operator
   timeout: 30m
   wait: true
