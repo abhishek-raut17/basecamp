@@ -21,6 +21,8 @@ spec:
       insecureSkipTLSVerify: false
     tls:
       type: cert-manager
+    args:
+      - --kubelet-insecure-tls
     resources:
       requests:
         cpu: 100m
