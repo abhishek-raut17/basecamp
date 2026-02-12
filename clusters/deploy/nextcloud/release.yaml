@@ -156,8 +156,6 @@ spec:
         s3.config.php: true
         reverse-proxy.config.php: true
         apcu.config.php: true
-        apps.config.php: true
-        imaginary.config.php: true
 
       configs:
         tuning.config.php: |-
