@@ -12,3 +12,4 @@ resources:
 - kustomizations/system-operators-olm.yaml
 - kustomizations/persistence-postgres.yaml
 - kustomizations/persistence-redis.yaml
+- kustomizations/nextcloud-nextcloud.yaml
