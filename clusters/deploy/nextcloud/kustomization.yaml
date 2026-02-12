@@ -5,5 +5,5 @@ resources:
 - ref-grant.yaml
 - route-middleware.yaml
 - sealed-secrets/nextcloud-admin-secret.yaml
-- sealed-secrets/nextcloud-s3-primary-secret
+- sealed-secrets/nextcloud-s3-primary-secret.yaml
 - release.yaml
