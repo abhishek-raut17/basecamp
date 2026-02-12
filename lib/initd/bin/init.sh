@@ -44,9 +44,8 @@ KUBESEAL_URL="${KUBESEAL_URL:-https://github.com/bitnami-labs/sealed-secrets/rel
 KUBESEAL_CONTOLLER_URL="${KUBESEAL_CONTOLLER_URL:-https://github.com/bitnami-labs/sealed-secrets/releases/download/${VERSION_KUBESEAL}/controller.yaml}"
 
 NGINX_DIR="${NGINX_DIR:-${INITD}/modules/nginx-gateway}"
-NGINX_CONF="${NGINX_CONF:-${NGINX_DIR}/nginx.conf}"
-NGINX_STREAM_CONF="${NGINX_STREAM_CONF:-${NGINX_DIR}/nginx-stream.conf}"
-NGINX_TUNING_CONF="${NGINX_TUNING_CONF:-${NGINX_DIR}/99-nginx-tuning.conf}"
+ACME_CERT_DIR="${NGINX_DIR:-${INITD}/modules/acme-cert}"
+COTURN_DIR="${COTURN_DIR:-${INITD}/modules/coturn}"
 
 CLUSTER_NAME="${CLUSTER_NAME:-basecamp}"
 CLUSTER_SUBNET="${CLUSTER_SUBNET:-10.0.10.0/24}"
@@ -289,9 +288,8 @@ export_configuration() {
     export K8S_GATEWAY_API
     export CERT_MNG_PLUGIN
     export NGINX_DIR
-    export NGINX_CONF
-    export NGINX_STREAM_CONF
-    export NGINX_TUNING_CONF
+    export ACME_CERT_DIR
+    export COTURN_DIR
     export CLUSTER_NAME
     export CLUSTER_SUBNET
     export CLUSTER_ENDPOINT
