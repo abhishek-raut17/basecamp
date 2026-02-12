@@ -10,5 +10,7 @@ resources:
 - kustomizations/ingress-traefik.yaml
 - kustomizations/dashboard-headlamp.yaml
 - kustomizations/system-operators-olm.yaml
+- kustomizations/system-metrics-server.yaml
 - kustomizations/persistence-postgres.yaml
 - kustomizations/persistence-redis.yaml
+- kustomizations/nextcloud-nextcloud.yaml

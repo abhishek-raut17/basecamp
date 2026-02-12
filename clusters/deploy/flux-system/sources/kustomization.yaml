@@ -5,3 +5,5 @@ resources:
 - traefik-repo.yaml
 - headlamp-repo.yaml
 - reflector-repo.yaml
+- metrics-server-repo.yaml
+- nextcloud-repo.yaml

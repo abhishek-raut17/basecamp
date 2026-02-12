@@ -33,8 +33,8 @@ declare -r INITD="${SCRIPT_DIR}"
 : "${VERSION_CRT_MNG_PLUGIN:?VERSION_CRT_MNG_PLUGIN not set}"
 : "${CERT_MNG_PLUGIN:?CERT_MNG_PLUGIN not set}"
 : "${NGINX_DIR:?NGINX_DIR not set}"
-: "${NGINX_CONF:?NGINX_CONF not set}"
-: "${NGINX_TUNING_CONF:?NGINX_TUNING_CONF not set}"
+: "${ACME_CERT_DIR:?ACME_CERT_DIR not set}"
+: "${COTURN_DIR:?COTURN_DIR not set}"
 : "${CLUSTER_NAME:?CLUSTER_NAME not set}"
 : "${CLUSTER_ENDPOINT:?CLUSTER_ENDPOINT not set}"
 
@@ -43,6 +43,7 @@ declare -r INITD="${SCRIPT_DIR}"
 # ------------------------------------------------------------------------------
 source "${SCRIPT_DIR}/shared/logger.sh"
 source "${SCRIPT_DIR}/shared/utils.sh"
+source "${SCRIPT_DIR}/acme-sh.sh"
 
 # ===============================================================================
 # Step 7: Log cluster initial state and health
@@ -290,21 +291,21 @@ setup_public_gateway() {
     systemctl stop nginx
 
     # Setup root config for nginx
-    if ! exists "file" ${NGINX_CONF}; then
-        log_warn "Root config for nginx doesnt exists at: ${NGINX_CONF}."
+    if ! exists "file" "${NGINX_DIR}/nginx.conf"; then
+        log_warn "Root config for nginx doesnt exists at: ${NGINX_DIR}/nginx.conf"
         exit 1
     else
-        log_debug "Found root config for nginx at: ${NGINX_CONF}"
-        cp ${NGINX_CONF} /etc/nginx/nginx.conf
+        log_debug "Found root config for nginx at: ${NGINX_DIR}/nginx.conf"
+        cp "${NGINX_DIR}/nginx.conf" /etc/nginx/nginx.conf
     fi
 
     # Setup kernel tuning config for nginx TCP passthrough
-    if ! exists "file" ${NGINX_TUNING_CONF}; then
-        log_warn "Kernel tuning config for nginx doesnt exists at: ${NGINX_TUNING_CONF}."
+    if ! exists "file" "${NGINX_DIR}/99-tuning.conf"; then
+        log_warn "Kernel tuning config for nginx doesnt exists at: ${NGINX_DIR}/99-tuning.conf"
         exit 1
     else
-        log_debug "Found kernel tuning config for nginx at: ${NGINX_TUNING_CONF}"
-        cp ${NGINX_TUNING_CONF} /etc/sysctl.d/99-nginx-tuning.conf
+        log_debug "Found kernel tuning config for nginx at: ${NGINX_DIR}/99-tuning.conf"
+        cp "${NGINX_DIR}/99-tuning.conf" /etc/sysctl.d/99-tuning.conf
     fi
 
     systemctl enable nginx
@@ -317,6 +318,63 @@ setup_public_gateway() {
         systemctl status nginx
         exit 1
     fi
+}
+
+# ===============================================================================
+# Step 16: Setup Coturn as a STUN/TURN server for WebRTC
+# ===============================================================================
+setup_coturn() {
+    log_info "Initializing coturn as a STUN/TURN server for WebRTC"
+
+    if ! dpkg -l | grep "coturn" 2>&1; then
+        log_debug "coturn not found. Installing..."
+        apt update
+        apt install -y coturn
+    else
+        log_debug "coturn is already installed."
+    fi
+
+    systemctl stop coturn
+
+    # Setup root config for coturn
+    if ! exists "file" "${COTURN_DIR}/turnserver.conf"; then
+        log_warn "coturn config doesnt exist at: ${COTURN_DIR}/turnserver.conf"
+        exit 1
+    else
+        log_debug "Found coturn config at: ${COTURN_DIR}/turnserver.conf"
+        cp "${COTURN_DIR}/turnserver.conf" /etc/turnserver.conf
+    fi
+
+    # Enable coturn in default config (Debian/Ubuntu specific)
+    if [[ -f "/etc/default/coturn" ]]; then
+        sed -i 's/^#TURNSERVER_ENABLED=1/TURNSERVER_ENABLED=1/' /etc/default/coturn
+        log_debug "Enabled coturn in /etc/default/coturn"
+    fi
+
+    # Setup kernel tuning config for nginx TCP passthrough
+    if ! exists "file" "${NGINX_DIR}/99-tuning.conf"; then
+        log_warn "Kernel tuning config for nginx doesnt exists at: ${NGINX_TUNING_CONF}/99-tuning.conf."
+        exit 1
+    else
+        log_debug "Found kernel tuning config for nginx at: ${NGINX_TUNING_CONF}/99-tuning.conf"
+        cp "${NGINX_DIR}/99-tuning.conf" /etc/sysctl.d/99-tuning.conf
+    fi
+
+    systemctl enable coturn
+    systemctl start coturn
+
+    if systemctl is-active --quiet coturn; then
+        log_success "coturn is running successfully!"
+    else
+        log_error "coturn failed to start. Checking status..."
+        systemctl status coturn
+        exit 1
+    fi
+
+    # NOTE: 
+    # 1. Remember to limitFile to 30000 on both nginx and coturn via systemctl edit
+    # 2. make sure that the certs are owned by turnserver user
+
 }
 
 # ===============================================================================
@@ -347,19 +405,19 @@ main() {
     fi
 
     # Step 7: Verify cluster health
-    log_section "Step 1/9: Verify cluster health and status"
+    log_section "Step 1/10: Verify cluster health and status"
     verify_cluster_health
     log_success "Step 1 completed: Cluster health verified"
     echo ""
 
     # Step 8: Label worker nodes
-    log_section "Step 2/9: Label worker nodes"
+    log_section "Step 2/10: Label worker nodes"
     label_worker_nodes
     log_success "Step 2 completed: Worker nodes labeled"
     echo ""
 
     # Step 9: Create required namespaces
-    log_section "Step 3/9: Create required namespaces"
+    log_section "Step 3/10: Create required namespaces"
     create_namespace "security"
     create_namespace "persistence"
     create_namespace "ingress"
@@ -368,7 +426,7 @@ main() {
     echo ""
 
     # Step 11: Generate secrets
-    log_section "Step 4/9: Generate and seal Kubernetes secrets"
+    log_section "Step 4/10: Generate and seal Kubernetes secrets"
     log_info "Generating secrets for cloud provider and DNS challenges"
     create_k8s_secret "security" "linode-credentials" "token=${CLOUD_PROVIDER_PAT}"
     create_k8s_secret "kube-system" "ccm-token" "token=${CLOUD_PROVIDER_PAT}" "region=${CLOUD_PROVIDER_REGION}"
@@ -376,19 +434,19 @@ main() {
     echo ""
 
     # Step 12: Deploy Linode CCM controller
-    log_section "Step 5/9: Deploy Linode CCM controller"
+    log_section "Step 5/10: Deploy Linode CCM controller"
     setup_ccm_controller
     log_success "Step 5 completed: Linode CCM deployed"
     echo ""
 
     # Step 13: Deploy Linode CSI driver
-    log_section "Step 6/9: Deploy Linode BlockStorage CSI driver"
+    log_section "Step 6/10: Deploy Linode BlockStorage CSI driver"
     setup_csi_driver
     log_success "Step 6 completed: Linode CSI deployed"
     echo ""
 
     # Step 14: Bootstrap FluxCD
-    log_section "Step 7/9: Bootstrap FluxCD for GitOps"
+    log_section "Step 7/10: Bootstrap FluxCD for GitOps"
     bootstrap_fluxcd
 
     # Sleeping to give flux time to reconcile
@@ -398,15 +456,21 @@ main() {
     echo ""
 
     # Step 15: Deploy cert-manager webhook
-    log_section "Step 8/9: Deploy cert-manager webhook for Linode DNS"
+    log_section "Step 8/10: Deploy cert-manager webhook for Linode DNS"
     setup_cert_manager
     log_success "Step 8 completed: Cert-manager webhook deployed"
     echo ""
 
     # Step 16: Setup Nginx gateway
-    log_section "Step 9/9: Setup Nginx gateway as TCP passthrough"
+    log_section "Step 9/10: Setup Nginx gateway as TCP passthrough"
     setup_public_gateway
     log_success "Step 9 completed: Nginx gateway configured"
+    echo ""
+
+    # Step 17: Setup acme.sh cert renewal job
+    log_section "Step 10/10: Setup acme.sh as cert renewal cron service"
+    setup_public_gateway
+    log_success "Step 10 completed: acme.sh cert manager configured"
     echo ""
 
     # Success
