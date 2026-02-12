@@ -87,7 +87,16 @@ resource "linode_firewall" "dmz_fw" {
     label    = "accept-tcp-from-internet"
     action   = "ACCEPT"
     protocol = "TCP"
-    ports    = "80,443"
+    ports    = "80,443,5349"
+    ipv4     = ["0.0.0.0/0"]
+  }
+
+  # Accept UDP (public traffic) from internet (as STUN/TURN for WebRTC)
+  inbound {
+    label    = "accept-udp-from-internet"
+    action   = "ACCEPT"
+    protocol = "UDP"
+    ports    = "3478,5349,49152-65535"
     ipv4     = ["0.0.0.0/0"]
   }
 
