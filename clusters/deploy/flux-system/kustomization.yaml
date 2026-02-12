@@ -13,3 +13,4 @@ resources:
 - kustomizations/system-metrics-server.yaml
 - kustomizations/persistence-postgres.yaml
 - kustomizations/persistence-redis.yaml
+- kustomizations/nextcloud-nextcloud.yaml
