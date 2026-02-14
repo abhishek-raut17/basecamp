@@ -3,20 +3,20 @@
 # Shared lib: logger file for logging
 #
 # Color codes
-readonly COLOR_RESET='\033[0m'
-readonly COLOR_BOLD='\033[1m'
-readonly COLOR_RED='\033[1;31m'
-readonly COLOR_GREEN='\033[1;32m'
-readonly COLOR_YELLOW='\033[1;33m'
-readonly COLOR_BLUE='\033[1;34m'
-readonly COLOR_MAGENTA='\033[1;35m'
-readonly COLOR_CYAN='\033[1;36m'
+declare COLORLESS='\033[1;30m'
+declare COLOR_RESET='\033[0m'
+declare COLOR_BOLD='\033[1m'
+declare COLOR_RED='\033[1;31m'
+declare COLOR_GREEN='\033[1;32m'
+declare COLOR_YELLOW='\033[1;33m'
+declare COLOR_BLUE='\033[1;34m'
+declare COLOR_CYAN='\033[1;36m'
 
 # Log levels
-readonly LOG_LEVEL_DEBUG=0
-readonly LOG_LEVEL_INFO=1
-readonly LOG_LEVEL_WARN=2
-readonly LOG_LEVEL_ERROR=3
+declare LOG_LEVEL_DEBUG=0
+declare LOG_LEVEL_INFO=1
+declare LOG_LEVEL_WARN=2
+declare LOG_LEVEL_ERROR=3
 
 # Current log level (default: INFO)
 LOG_LEVEL="${LOG_LEVEL:-$LOG_LEVEL_INFO}"
@@ -46,9 +46,44 @@ log_with_level() {
 # ------------------------------------------------------------------------------
 # Debug log (only shown when VERBOSE=true or LOG_LEVEL=DEBUG)
 # ------------------------------------------------------------------------------
+log_mark() {
+    log_with_level " ---> " "$COLORLESS" "$*"
+}
+
+# ------------------------------------------------------------------------------
+# Debug log (only shown when VERBOSE=true or LOG_LEVEL=DEBUG)
+# ------------------------------------------------------------------------------
+test_mark() {
+    log_with_level "TEST ---> " "$COLORLESS" "$*"
+}
+
+# ------------------------------------------------------------------------------
+# Debug log (only shown when VERBOSE=true or LOG_LEVEL=DEBUG)
+# ------------------------------------------------------------------------------
+test_pass() {
+    log_with_level "✓" "$COLOR_GREEN" "$*"
+}
+
+# ------------------------------------------------------------------------------
+# Debug log (only shown when VERBOSE=true or LOG_LEVEL=DEBUG)
+# ------------------------------------------------------------------------------
+test_error() {
+    log_with_level "x" "$COLOR_RED" "$*"
+}
+
+# ------------------------------------------------------------------------------
+# Debug log (only shown when VERBOSE=true or LOG_LEVEL=DEBUG)
+# ------------------------------------------------------------------------------
+test_warn() {
+    log_with_level "!" "$COLOR_YELLOW" "$*"
+}
+
+# ------------------------------------------------------------------------------
+# Debug log (only shown when VERBOSE=true or LOG_LEVEL=DEBUG)
+# ------------------------------------------------------------------------------
 log_debug() {
     if [[ "${VERBOSE:-false}" == "true" ]] || [[ "$LOG_LEVEL" -le "$LOG_LEVEL_DEBUG" ]]; then
-        log_with_level "DEBUG" "$COLOR_CYAN" "$* ... "
+        log_with_level "DEBUG" "$COLOR_CYAN" "$*"
     fi
 }
 
@@ -85,23 +120,10 @@ log_success() {
 }
 
 # ------------------------------------------------------------------------------
-# Section header (for visual organization)
-# ------------------------------------------------------------------------------
-log_section() {
-    local title="$*"
-    local separator="=================================================="
-    
-    echo "" >&2
-    echo -e "${COLOR_BOLD}${COLOR_MAGENTA}${separator}${COLOR_RESET}" >&2
-    echo -e "${COLOR_BOLD}${COLOR_MAGENTA} $title${COLOR_RESET}" >&2
-    echo -e "${COLOR_BOLD}${COLOR_MAGENTA}${separator}${COLOR_RESET}" >&2
-}
-
-# ------------------------------------------------------------------------------
 # Fatal error (logs and exits)
 # ------------------------------------------------------------------------------
 log_fatal() {
-    log_error "$*"
+    log_with_level "FATAL" "$COLOR_RED" "$*"
     exit 1
 }
 

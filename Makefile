@@ -1,86 +1,174 @@
-# Makefile for Basecamp Project
-# 
-# Targets:
-#   all     - Run prerequisites check and build (default)
-#   prereq  - Verify required tools are installed
-#	setup	- 
-#	plan	-	
-#   build   - Compile project and submodules
-#   clean   - Remove build artifacts and clean submodules
+# Makefile for Basecamp Project - Modular & Orchestration-Driven
 #
+# Architecture:
+#   - Makefile: Orchestration layer (env validation, error handling, sequencing)
+#   - lib/shared/: Common utilities (logging, validation, file operations)
+#   - lib/scripts/: Modular components (install_tool.sh, configure_*.sh, etc.)
+#   - lib/tests/: Test suite for each component
+#
+# Usage: make [target]
 
-# Export environment variables
-ifneq (,$(wildcard ./.env))
-    include .env
-    export
-endif
+# ============================================================================
+# Environment Setup
+# ============================================================================
 
-# Variables
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
+.DELETE_ON_ERROR:
+.EXPORT_ALL_VARIABLES:
+
 ROOT_DIR := $(CURDIR)
-CLUSTER_DEPLOY_DIR := $(ROOT_DIR)/clusters/deploy
-MANIFEST_LIB := $(ROOT_DIR)/manifests
-LIB := $(ROOT_DIR)/lib
 INFRA_DIR := $(ROOT_DIR)/infrastructure
-CLUSTER_LIB := $(LIB)/cluster
-LOCAL_LIB := $(LIB)/local
-SHARED_LIB := $(LIB)/shared
+LIB_DIR := $(ROOT_DIR)/lib
+SCRIPTS_DIR := $(LIB_DIR)/scripts
+TESTS_DIR := $(LIB_DIR)/tests
 
-# Tasks
-.PHONY: all help prereq setup plan build clean destroy
+# Load environment variables from .env if it exists
+ifneq (,$(wildcard .env))
+    include .env
+endif
+export
 
-# Generate help man page
-help:
-	@echo "Project - Make Targets"
-	@echo ""
-	@echo "Usage: make [target]"
-	@echo ""
-	@echo "Targets:"
-	@echo "  all      - Run prerequisites check and build (default)"
-	@echo "  prereq   - Verify required tools are installed"
-	@echo "  setup    - Setup machine configs for cluster nodes"
-	@echo "  plan     - Plan cluster infrastructure resources"
-	@echo "  build    - Compile project and submodules"
-	@echo "  clean    - Remove build artifacts and clean submodules"
-	@echo "  destroy  - Destroy infrastructure using terraform (CRITICAL)"
-	@echo "  help     - Show this help message"
-	@echo ""
+# ============================================================================
+# Color Output & Logging
+# ============================================================================
 
-# Run all build/deploy/cleanup targets
-all: build clean
+COLOR_RESET := \033[0m
+COLOR_INFO := \033[1;34m
+COLOR_SUCCESS := \033[1;32m
+COLOR_ERROR := \033[1;31m
+COLOR_WARN := \033[1;33m
 
-# Check and ready localhost machine for cluster management
-prereq:
-	@if [ ! -f $(LOCAL_LIB)/bin/prereq.sh ]; then echo "Prerequisites binary not found."; exit 1; fi
-	@$(LOCAL_LIB)/bin/prereq.sh
-	@if [ $$? -ne 0 ]; then echo "Prerequisites check failed"; exit 1; fi
+define log_info
+	printf "%b\n" "$(COLOR_INFO)[INFO ]$(COLOR_RESET) $$(date '+%Y-%m-%d %H:%M:%S') - $(1)" >&2
+endef
 
-# Setup configs for build phase
-setup:
-	@if [ ! -f $(CLUSTER_LIB)/bin/setup.sh ]; then echo "Cluster setup binary not found."; exit 1; fi
-	@$(CLUSTER_LIB)/bin/setup.sh
-	@if [ $$? -ne 0 ]; then echo "Local setup failed"; exit 1; fi
+define log_success
+	printf "%b\n" "$(COLOR_SUCCESS)[OK   ]$(COLOR_RESET) $$(date '+%Y-%m-%d %H:%M:%S') - $(1)" >&2
+endef
 
-# Plan infrastructure 
-plan:
-	@if [ ! -f $(CLUSTER_LIB)/bin/plan.sh ]; then echo "Cluster build plan binary not found."; exit 1; fi
-	@$(CLUSTER_LIB)/bin/plan.sh
-	@if [ $$? -ne 0 ]; then echo "Infrastructure plan build failed"; exit 1; fi
+define log_error
+	printf "%b\n" "$(COLOR_ERROR)[ERROR]$(COLOR_RESET) $$(date '+%Y-%m-%d %H:%M:%S') - $(1)" >&2
+endef
 
-# Build cluster resources
-build: prereq setup plan
-	@if [ ! -f $(CLUSTER_LIB)/bin/build.sh ]; then echo "Cluster build binary not found."; exit 1; fi
-	@$(CLUSTER_LIB)/bin/build.sh
-	@if [ $$? -ne 0 ]; then echo "Infrastructure deploy failed"; exit 1; fi
+define log_warn
+	printf "%b\n" "$(COLOR_WARN)[WARN ]$(COLOR_RESET) $$(date '+%Y-%m-%d %H:%M:%S') - $(1)" >&2
+endef
 
-# Cleanup stale resources
+# ============================================================================
+# Utility Functions
+# ============================================================================
+
+# Validate that a required file exists
+define validate_file
+	@if [ ! -f "$(1)" ]; then \
+		$(call log_error,Required file not found: $(1)); \
+		exit 1; \
+	fi
+endef
+
+# Validate that a directory exists
+define validate_dir
+	@if [ ! -d "$(1)" ]; then \
+		$(call log_error,Required directory not found: $(1)); \
+		exit 1; \
+	fi
+endef
+
+# ============================================================================
+# Validation Targets
+# ============================================================================
+
+.PHONY: validate-make validate test-prereq test-setup test-plan test
+
+validate-make:
+	@$(call log_info,Validating required files for make)
+	@$(call validate_dir,$(SCRIPTS_DIR))
+	@$(call validate_dir,$(TESTS_DIR))
+	@$(call validate_file,$(SCRIPTS_DIR)/validate_env.sh)
+	@$(call log_success,Required files for make are valid)
+
+validate: validate-make
+	@$(SCRIPTS_DIR)/validate_env.sh
+	@$(SCRIPTS_DIR)/sshkey_gen.sh
+
+test-prereq:
+	@$(TESTS_DIR)/test-prereq.sh
+
+test-setup:
+	@$(TESTS_DIR)/test-setup.sh
+
+test-plan:
+	@${TESTS_DIR}/test-plan.sh
+
+test: test-prereq test-setup test-plan
+
+# ============================================================================
+# Core Targets
+# ============================================================================
+
+.PHONY: all prereq setup plan build
+
+# Default core target
+all: build
+
+prereq: validate
+	@$(SCRIPTS_DIR)/prereq.sh
+
+setup: prereq test-prereq
+	@$(SCRIPTS_DIR)/setup.sh
+
+plan: setup test-setup
+	@$(SCRIPTS_DIR)/plan.sh
+
+build: plan test-plan
+
+# ============================================================================
+# Maintainance Targets
+# ============================================================================
+
+.PHONY: clean destroy
+
 clean:
-	@if [ ! -f $(LOCAL_LIB)/bin/cleanup.sh ]; then echo "Cluster setup binary not found."; exit 1; fi
-	@$(LOCAL_LIB)/bin/cleanup.sh
-	@if [ $$? -ne 0 ]; then echo "Cleanup failed"; exit 1; fi
 
-# Destroy infrastructure: (CRITICAL)
 destroy:
-	@if [ ! -d $(INFRA_DIR) ]; then echo "Infrastructure directory not found."; exit 1; fi
-	@cd $(INFRA_DIR) && terraform destroy -auto-approve
+
+# ============================================================================
+# Info Targets
+# ============================================================================
+
+.PHONY: help info
+
+help:
+	@printf "%b\n" "$(COLOR_INFO)════════════════════════════════════════════════════════════$(COLOR_RESET)" >&2
+	@printf "%b\n" "$(COLOR_INFO)Basecamp Project [Release: $(RELEASE_VERSION)] - Makefile Targets$(COLOR_RESET)" >&2
+	@printf "%b\n" "$(COLOR_INFO)════════════════════════════════════════════════════════════$(COLOR_RESET)" >&2
+	@echo ""
+	@printf "%b\n" "$(COLOR_SUCCESS)Core Targets:$(COLOR_RESET)" >&2
+	@printf "%b\n" "  make all              - Run full setup (prereq → setup → plan → build)" >&2
+	@printf "%b\n" "  make prereq           - Verify and install required tools" >&2
+	@printf "%b\n" "  make setup            - Configure local and remote nodes" >&2
+	@printf "%b\n" "  make plan             - Plan infrastructure resources" >&2
+	@printf "%b\n" "  make build            - Deploy cluster infrastructure" >&2
+	@echo ""
+	@printf "%b\n" "$(COLOR_SUCCESS)Validation Targets:$(COLOR_RESET)" >&2
+	@printf "%b\n" "  make test             - Run all test suites" >&2
+	@printf "%b\n" "  make validate         - Validate environment and files" >&2
+	@echo ""
+	@printf "%b\n" "$(COLOR_SUCCESS)Maintenance Targets:$(COLOR_RESET)" >&2
+	@printf "%b\n" "  make clean            - Remove build artifacts" >&2
+	@printf "%b\n" "  make destroy          - Destroy infrastructure (CRITICAL)" >&2
+	@echo ""
+	@printf "%b\n" "$(COLOR_SUCCESS)Info:$(COLOR_RESET)" >&2
+	@printf "%b\n" "  make info             - Display environment and configuration info" >&2
+	@printf "%b\n" "  make help             - Show this help message" >&2
+	@echo ""
+
+info:
+	$(call log_info,Configuration Information)
+	@printf "%b\n" "  Cluster Name:         $(CLUSTER_NAME)" >&2
+	@printf "%b\n" "  Scripts Directory:    $(SCRIPTS_DIR)" >&2
+	@printf "%b\n" "  Tests Directory:      $(TESTS_DIR)" >&2
+	@echo ""
+
+# ============================================================================
