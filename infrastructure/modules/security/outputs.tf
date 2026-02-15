@@ -8,15 +8,21 @@
 
 output "security_details" {
   depends_on = [
-    linode_firewall.cluster_fw,
-    linode_firewall.dmz_fw
+    linode_firewall.cluster_firewall,
+    linode_firewall.dmz_firewall
   ]
   description = "Firewall details"
   value = {
-    firewall = {
-      cluster = linode_firewall.cluster_fw.id,
-      dmz     = linode_firewall.dmz_fw.id
-    }
+    firewalls = [
+      {
+        name = "cluster"
+        id   = linode_firewall.cluster_firewall.id
+      },
+      {
+        name = "dmz"
+        id   = linode_firewall.dmz_firewall.id
+      }
+    ]
   }
 }
 # ------------------------------------------------------------------------------

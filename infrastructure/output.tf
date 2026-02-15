@@ -24,9 +24,4 @@ output "compute_details" {
   value       = module.compute.compute_details
 }
 
-output "bastion_gateway_details" {
-  description = "Bastion: Gateway host details"
-  value       = module.bastion.bastion_details
-}
-
 # ------------------------------------------------------------------------------

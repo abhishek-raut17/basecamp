@@ -33,25 +33,45 @@ terraform {
   required_version = ">= 1.0.0"
 }
 
-data "linode_instance_type" "node_type" {
-  id = var.nodetype
-}
-
-data "linode_image" "node_image" {
-  id = var.nodeimage
-}
-
 locals {
+  cluster_subnet_id   = [for subnet in var.subnets : subnet.id if subnet.name == "cluster"][0]
+  cluster_subnet      = [for subnet in var.subnets : subnet.cidr if subnet.name == "cluster"][0]
+  dmz_subnet_id       = [for subnet in var.subnets : subnet.id if subnet.name == "dmz"][0]
+  dmz_subnet          = [for subnet in var.subnets : subnet.cidr if subnet.name == "dmz"][0]
+  cluster_firewall_id = [for fw in var.firewalls : fw.id if fw.name == "cluster"][0]
+  dmz_firewall_id     = [for fw in var.firewalls : fw.id if fw.name == "dmz"][0]
+}
 
-  cluster_node_disk_size = data.linode_instance_type.node_type.disk
-  storage_disk_size      = (data.linode_instance_type.node_type.disk - 20480) > 0 ? (data.linode_instance_type.node_type.disk - 20480) : 20480
+data "linode_instance_type" "controlplane_node_type" {
+  id = var.nodes.controlplane.type
+}
 
-  cluster_image_id = data.linode_image.node_image.id
-  cluster_node_id  = data.linode_instance_type.node_type.id
+data "linode_instance_type" "worker_node_type" {
+  id = var.nodes.worker.type
+}
 
-  controlplane_userdata = base64encode(var.node_userdata.controlplane.content)
-  workers_userdata      = [for w in var.node_userdata.workers : base64encode(w.content)]
+data "linode_instance_type" "dmz_node_type" {
+  id = var.nodes.dmz.type
+}
 
+data "linode_image" "controlplane_node_image" {
+  id = var.nodes.controlplane.image
+}
+
+data "linode_image" "worker_node_image" {
+  id = var.nodes.worker.image
+}
+
+data "linode_image" "dmz_node_image" {
+  id = var.nodes.dmz.image
+}
+
+# ------------------------------------------------------------------------------
+# DMZ Access SSH Key: Provisions SSH key for secure access to DMZ nodes (bastion/gateway)
+# ------------------------------------------------------------------------------
+resource "linode_sshkey" "access_key" {
+  label   = "${var.infra}-dmz-access-key"
+  ssh_key = var.dmz_access_sshkey
 }
 
 # ------------------------------------------------------------------------------
@@ -59,51 +79,78 @@ locals {
 # ------------------------------------------------------------------------------
 resource "linode_instance" "control_plane" {
   depends_on = [
-    data.linode_instance_type.node_type,
-    local.controlplane_userdata
+    data.linode_instance_type.controlplane_node_type
   ]
 
-  label  = "${var.infra}-control-plane"
+  count  = var.nodes.controlplane.count
+  label  = "${var.infra}-control-plane-${count.index}"
   region = var.region
-  type   = local.cluster_node_id
+  type   = data.linode_instance_type.controlplane_node_type.id
 
   metadata {
-    user_data = local.controlplane_userdata
+    user_data = base64encode(file("${var.userdata_dir}/controlplane-${count.index}.machineconfig.yaml"))
   }
 
-  tags = ["control-plane"]
+  tags = ["control-plane-${count.index}"]
 }
 
 # ------------------------------------------------------------------------------
 # Worker Nodes: Provisions worker node(s) for k8s cluster; default: 3 nodes
 # ------------------------------------------------------------------------------
 resource "linode_instance" "worker" {
-  count = length(var.vpc_ip.workers)
+  count = var.nodes.worker.count
 
   depends_on = [
-    data.linode_instance_type.node_type,
-    local.workers_userdata
+    data.linode_instance_type.worker_node_type
   ]
 
   label  = "${var.infra}-worker-${count.index}"
   region = var.region
-  type   = local.cluster_node_id
+  type   = data.linode_instance_type.worker_node_type.id
 
   metadata {
-    user_data = local.workers_userdata[count.index]
+    user_data = base64encode(file("${var.userdata_dir}/worker-${count.index}.machineconfig.yaml"))
   }
 
   tags = ["worker-${count.index}"]
 }
 
 # ------------------------------------------------------------------------------
+# Provision DMZ/gateway host for secured access to cluster and gateway
+# ------------------------------------------------------------------------------
+resource "linode_instance" "dmz" {
+  label           = "${var.infra}-dmz-gateway"
+  region          = var.region
+  type            = data.linode_instance_type.dmz_node_type.id
+  image           = data.linode_image.dmz_node_image.id
+  root_pass       = null
+  authorized_keys = [linode_sshkey.access_key.ssh_key]
+
+  interface {
+    purpose = "public"
+    primary = true
+  }
+
+  interface {
+    purpose   = "vpc"
+    subnet_id = local.dmz_subnet_id
+    ipv4 {
+      vpc = cidrhost(local.dmz_subnet, 50)
+    }
+  }
+
+  tags = ["${var.infra}", "bastion", "gateway"]
+}
+
+# ------------------------------------------------------------------------------
 # Primary Disk (Control-Plane): Provisions boot disk for control-plane
 # ------------------------------------------------------------------------------
 resource "linode_instance_disk" "cp_boot_disk" {
-  label      = "${var.infra}-boot-disk-cp"
-  linode_id  = linode_instance.control_plane.id
-  size       = local.cluster_node_disk_size
-  image      = local.cluster_image_id
+  count      = var.nodes.controlplane.count
+  label      = "${var.infra}-boot-disk-cp-${count.index}"
+  linode_id  = linode_instance.control_plane[count.index].id
+  size       = linode_instance.control_plane[count.index].specs.0.disk
+  image      = var.nodes.controlplane.image
   filesystem = "raw"
 }
 
@@ -111,11 +158,11 @@ resource "linode_instance_disk" "cp_boot_disk" {
 # Primary Disk (Worker Nodes): Provisions boot disk for worker nodes
 # ------------------------------------------------------------------------------
 resource "linode_instance_disk" "wkr_boot_disk" {
-  count      = length(var.vpc_ip.workers)
+  count      = var.nodes.worker.count
   label      = "${var.infra}-boot-disk-wkr-${count.index}"
   linode_id  = linode_instance.worker[count.index].id
-  size       = local.cluster_node_disk_size
-  image      = local.cluster_image_id
+  size       = linode_instance.worker[count.index].specs.0.disk
+  image      = var.nodes.worker.image
   filesystem = "raw"
 }
 
@@ -124,8 +171,9 @@ resource "linode_instance_disk" "wkr_boot_disk" {
 # ------------------------------------------------------------------------------
 resource "linode_instance_config" "cp_boot_config" {
   depends_on = [linode_instance_disk.cp_boot_disk]
-  label      = "${var.infra}-cp-boot-config"
-  linode_id  = linode_instance.control_plane.id
+  count      = var.nodes.controlplane.count
+  label      = "${var.infra}-cp-boot-config-${count.index}"
+  linode_id  = linode_instance.control_plane[count.index].id
 
   # Boot helpers must be disabled for Talos
   helpers {
@@ -142,14 +190,14 @@ resource "linode_instance_config" "cp_boot_config" {
 
   device {
     device_name = "sda"
-    disk_id     = linode_instance_disk.cp_boot_disk.id
+    disk_id     = linode_instance_disk.cp_boot_disk[count.index].id
   }
 
   interface {
     purpose   = "vpc"
-    subnet_id = var.subnet_id
+    subnet_id = local.cluster_subnet_id
     ipv4 {
-      vpc     = var.vpc_ip.controlplane
+      vpc     = cidrhost(local.cluster_subnet, 10 + count.index)
       nat_1_1 = "any"
     }
   }
@@ -160,7 +208,7 @@ resource "linode_instance_config" "cp_boot_config" {
 # ------------------------------------------------------------------------------
 resource "linode_instance_config" "wkr_boot_config" {
   depends_on = [linode_instance_disk.wkr_boot_disk]
-  count      = length(var.vpc_ip.workers)
+  count      = var.nodes.worker.count
   label      = "${var.infra}-wkr-${count.index}-boot-config"
   linode_id  = linode_instance.worker[count.index].id
 
@@ -185,9 +233,9 @@ resource "linode_instance_config" "wkr_boot_config" {
 
   interface {
     purpose   = "vpc"
-    subnet_id = var.subnet_id
+    subnet_id = local.cluster_subnet_id
     ipv4 {
-      vpc     = var.vpc_ip.workers[count.index]
+      vpc     = cidrhost(local.cluster_subnet, 532 + count.index)
       nat_1_1 = "any"
     }
   }
@@ -196,18 +244,27 @@ resource "linode_instance_config" "wkr_boot_config" {
 # ------------------------------------------------------------------------------
 # Control plane firewall: Attach control plane node to cluster subnet firewall
 # ------------------------------------------------------------------------------
-resource "linode_firewall_device" "controlplane_fw_device" {
-  firewall_id = var.firewall_id
-  entity_id   = linode_instance.control_plane.id
+resource "linode_firewall_device" "controlplane_node_fw_device" {
+  count       = var.nodes.controlplane.count
+  firewall_id = local.cluster_firewall_id
+  entity_id   = linode_instance.control_plane[count.index].id
 }
 
 # ------------------------------------------------------------------------------
 # Worker nodes firewall: Attach worker nodes to cluster subnet firewall
 # ------------------------------------------------------------------------------
 resource "linode_firewall_device" "wkr_node_fw_device" {
-  count       = length(var.vpc_ip.workers)
-  firewall_id = var.firewall_id
+  count       = var.nodes.worker.count
+  firewall_id = local.cluster_firewall_id
   entity_id   = linode_instance.worker[count.index].id
+}
+
+# ------------------------------------------------------------------------------
+# DMZ nodes firewall: Attach DMZ nodes to cluster subnet firewall
+# ------------------------------------------------------------------------------
+resource "linode_firewall_device" "dmz_node_fw_device" {
+  firewall_id = local.dmz_firewall_id
+  entity_id   = linode_instance.dmz.id
 }
 
 # ------------------------------------------------------------------------------
