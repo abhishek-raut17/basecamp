@@ -15,7 +15,7 @@ source "$(dirname "$0")/shared/utils.sh"
 trap 'log_fatal "setup target failed at line $LINENO"' ERR
 
 PROJECT_NAME="${PROJECT_NAME:-basecamp}"
-CLUSTER_IP="${CLUSTER_IP:-10.0.10.10}"
+CLUSTER_IP="${CLUSTER_IP:-10.5.0.10}"
 CONTROLPLANE_NODECOUNT=${CONTROLPLANE_NODECOUNT:-1}
 WORKER_NODECOUNT=${WORKER_NODECOUNT:-3}
 DATA_DIR="${DATA_DIR:-$HOME/.local/share/$PROJECT_NAME}"
@@ -85,7 +85,7 @@ patch_talos_machineconf() {
     for ((i=0; i<${CONTROLPLANE_NODECOUNT}; i++)); do
         talosctl machineconfig patch "${TALOS_SECRETS_DIR}/controlplane.yaml" \
             --patch @"${PATCH_MACHINECONF_LIB}/cp.machineconfig.yaml" \
-            --patch '[{"op": "replace", "path": "/machine/network/hostname", "value": "controlplane-'${i}'"}]' \
+            --patch '[{"op": "replace", "path": "/machine/network/hostname", "value": "'${PROJECT_NAME}'-controlplane-'${i}'"}]' \
             --output "${TALOS_DATA_DIR}/controlplane-${i}.machineconfig.yaml" || return 1
     done
 
@@ -94,7 +94,7 @@ patch_talos_machineconf() {
     for ((i=0; i<${WORKER_NODECOUNT}; i++)); do
         talosctl machineconfig patch "${TALOS_SECRETS_DIR}/worker.yaml" \
             --patch @"${PATCH_MACHINECONF_LIB}/wkr.machineconfig.yaml" \
-            --patch '[{"op": "replace", "path": "/machine/network/hostname", "value": "worker-'${i}'"}]' \
+            --patch '[{"op": "replace", "path": "/machine/network/hostname", "value": "'${PROJECT_NAME}'-worker-'${i}'"}]' \
             --output "${TALOS_DATA_DIR}/worker-${i}.machineconfig.yaml" || return 1
     done
 }

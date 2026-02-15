@@ -48,8 +48,8 @@ ACME_CERT_DIR="${NGINX_DIR:-${INITD}/modules/acme-cert}"
 COTURN_DIR="${COTURN_DIR:-${INITD}/modules/coturn}"
 
 CLUSTER_NAME="${CLUSTER_NAME:-basecamp}"
-CLUSTER_SUBNET="${CLUSTER_SUBNET:-10.0.10.0/24}"
-CLUSTER_ENDPOINT="${CLUSTER_ENDPOINT:-10.0.10.10}"
+CLUSTER_SUBNET="${CLUSTER_SUBNET:-10.5.0.0/16}"
+CLUSTER_ENDPOINT="${CLUSTER_ENDPOINT:-10.5.0.10}"
 
 # ------------------------------------------------------------------------------
 # Source shared modules

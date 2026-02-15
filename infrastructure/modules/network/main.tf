@@ -22,8 +22,8 @@ terraform {
 }
 
 locals {
-  dmz_subnet     = cidrsubnet(var.vpc_cidr, 8, 2)  # (default: 10.0.2.0/24)
-  cluster_subnet = cidrsubnet(var.vpc_cidr, 8, 10) # (default: 10.0.10.0/24)
+  dmz_subnet     = cidrsubnet(var.vpc_cidr, 8, 2) # (default: 10.2.0.0/16)
+  cluster_subnet = cidrsubnet(var.vpc_cidr, 8, 5) # (default: 10.5.0.0/16)
 }
 
 # ------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ resource "linode_vpc" "vpc" {
 }
 
 # ------------------------------------------------------------------------------
-# Subnet: DMZ Subnet for public facing (jump proxy/bastion host) resources
+# Subnet: DMZ Subnet for public facing (jump proxy/bastion host/gateway/TURN server)
 # ------------------------------------------------------------------------------
 resource "linode_vpc_subnet" "dmz_subnet" {
   label  = "${var.infra}-dmz-subnet"

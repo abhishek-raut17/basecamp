@@ -19,10 +19,16 @@ terraform {
   required_version = ">= 1.5.0"
 }
 
+locals {
+
+  cluster_cidr = [for subnet in var.subnets : subnet.cidr if subnet.name == "cluster"]
+  dmz_cidr     = [for subnet in var.subnets : subnet.cidr if subnet.name == "dmz"]
+}
+
 # ------------------------------------------------------------------------------
 # Firewall: Cluster Subnet Firewall for internal/cluster resources
 # ------------------------------------------------------------------------------
-resource "linode_firewall" "cluster_fw" {
+resource "linode_firewall" "cluster_firewall" {
   label = "${var.infra}-cluster-firewall-rules"
 
   # Allow TCP from cluster subnet for internal cluster communication
@@ -31,7 +37,7 @@ resource "linode_firewall" "cluster_fw" {
     action   = "ACCEPT"
     protocol = "TCP"
     ports    = "1-65535"
-    ipv4     = [var.subnet.cluster.cidr]
+    ipv4     = local.cluster_cidr
   }
 
   # Allow UDP from cluster subnet for internal cluster communication
@@ -40,25 +46,25 @@ resource "linode_firewall" "cluster_fw" {
     action   = "ACCEPT"
     protocol = "UDP"
     ports    = "1-65535"
-    ipv4     = [var.subnet.cluster.cidr]
+    ipv4     = local.cluster_cidr
   }
 
   # Allow TCP from DMZ subnet for cluster management
   inbound {
-    label    = "allow-cluster-manager"
+    label    = "allow-access-from-dmz-subnet"
     action   = "ACCEPT"
     protocol = "TCP"
     ports    = "6443,50000"
-    ipv4     = [var.subnet.dmz.cidr]
+    ipv4     = local.dmz_cidr
   }
 
-  # Allow TCP from DMZ subnet for service traffic
+  # Allow TCP from DMZ subnet for public service traffic
   inbound {
     label    = "allow-tcp-from-dmz-subnet"
     action   = "ACCEPT"
     protocol = "TCP"
     ports    = "8000,8443"
-    ipv4     = [var.subnet.dmz.cidr]
+    ipv4     = local.dmz_cidr
   }
 
   inbound_policy  = "DROP"
@@ -70,10 +76,10 @@ resource "linode_firewall" "cluster_fw" {
 # ------------------------------------------------------------------------------
 # Firewall: DMZ Subnet Firewall for access to bastion and loadbalancer
 # ------------------------------------------------------------------------------
-resource "linode_firewall" "dmz_fw" {
+resource "linode_firewall" "dmz_firewall" {
   label = "${var.infra}-dmz-firewall-rules"
 
-  # Allow SSH from internet (as bastion host)
+  # Allow SSH from internet (for cluster management access to bastion host in DMZ)
   inbound {
     label    = "allow-ssh-from-internet"
     action   = "ACCEPT"
@@ -82,7 +88,7 @@ resource "linode_firewall" "dmz_fw" {
     ipv4     = ["0.0.0.0/0"]
   }
 
-  # Accept TCP (public traffic) from internet (as loadbalancer)
+  # Accept TCP (public traffic) from internet (as cluster gateway and TURN TLS for WebRTC)
   inbound {
     label    = "accept-tcp-from-internet"
     action   = "ACCEPT"

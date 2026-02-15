@@ -122,6 +122,7 @@ plan: setup test-setup
 	@$(SCRIPTS_DIR)/plan.sh
 
 build: plan test-plan
+	@$(SCRIPTS_DIR)/build.sh
 
 # ============================================================================
 # Maintainance Targets

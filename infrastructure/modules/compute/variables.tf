@@ -27,52 +27,64 @@ variable "region" {
   type        = string
 }
 
-## Instance Type
-variable "nodetype" {
-  description = "The type (category) of compute node instance for bastion host"
+## SSH Key to access DMZ nodes (public nodes)
+variable "dmz_access_sshkey" {
+  description = "Path to the SSH keys for admin access to DMZ nodes (default: ~/.ssh/id_rsa.pub)"
   type        = string
+  sensitive   = true
 }
 
-## Nodes image; default: Debian 12
-variable "nodeimage" {
-  description = "Base Linux Image for instances"
-  type        = string
-}
-
-## Cluster Subnet ID for cluster nodes
-variable "subnet_id" {
-  description = "ID of the Cluster subnet"
-  type        = string
-}
-
-## Static VPC ipv4 for controlplane node
-variable "vpc_ip" {
-  description = "Static VPC ipv4 for cluster node"
+## Nodes details: instance types, images and count for control plane, worker, and DMZ nodes
+variable "nodes" {
+  description = "Nodes details: instance types, images and count for control plane, worker, and DMZ nodes"
   type = object({
-    controlplane = string,
-    workers      = list(string)
+    controlplane = object({
+      type  = string,
+      image = string,
+      count = number
+    }),
+    worker = object({
+      type  = string,
+      image = string,
+      count = number
+    }),
+    dmz = object({
+      type  = string,
+      image = string,
+      count = number
+    })
   })
+}
+
+## Subnet details
+variable "subnets" {
+  description = "Subnet details for cluster and DMZ subnets"
+  type = list(object({
+    name = string,
+    id   = string,
+    cidr = string
+  }))
+}
+
+## VPC ID for infrastructure
+variable "vpc" {
+  description = "VPC ID for infrastructure"
+  type        = string
 }
 
 ## Firewall ID for cluster nodes
-variable "firewall_id" {
-  description = "Firewall rule ID for cluster nodes"
-  type        = string
+variable "firewalls" {
+  description = "Firewall rule for cluster and DMZ nodes"
+  type = list(object({
+    name = string,
+    id   = string
+  }))
 }
 
 ## Cloud-init styled user data for node configuration
-variable "node_userdata" {
+variable "userdata_dir" {
   description = "Cloud-init styled user data for node configuration"
-  type = object({
-    controlplane = object({
-      filename = string,
-      content  = string
-    }),
-    workers = list(object({
-      filename = string,
-      content  = string
-    }))
-  })
+  type        = string
 }
 
 # ------------------------------------------------------------------------------

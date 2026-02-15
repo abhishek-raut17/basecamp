@@ -31,6 +31,7 @@ REQUIRED_ENV_VARS=(
     CONFIG_DIR
     DATA_DIR
     INSTALL_BIN_DIR
+    PLAN
 )
 
 validate_env() {

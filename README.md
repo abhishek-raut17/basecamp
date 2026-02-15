@@ -507,3 +507,13 @@ See [LICENSE](LICENSE) file for license details.
 - [Cert-Manager Documentation](https://cert-manager.io/docs/)
 - [Longhorn Storage](https://longhorn.io/docs/)
 - [Headlamp Dashboard](https://headlamp.dev/)
+
+
+## Subnet routings
+1. 10.0.0.0/8 - vpc
+2. 10.2.0.0/24 - DMZ (255 hosts - limited for cluster management access) (dmz starting at: 10.2.0.50)
+3. 10.5.0.0/16 - Cluster nodes (controlplane and worker nodes for k8s)
+   3.1. 10.5.0.0/24 - (control plane CIDR) (controlplane starting at: 10.5.0.10)
+   3.2. 10.5.2.0/24 - (worker nodes CIDR) (worker node starting at: 10.5.2.20)
+4. 10.10.0.0/16 - k8s pod CIDR
+5. 10.30.0.0/16 - Edge/gateway (65,536 hosts - future use - currently for small scale DMZ is used for gateway)
