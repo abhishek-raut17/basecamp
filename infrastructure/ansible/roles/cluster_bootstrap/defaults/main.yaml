@@ -1,0 +1,4 @@
+talos_cluster_endpoint: "{{ cluster_endpoint }}"
+talosconfig_path: "/root/.talos/config"
+talosctl_timeout: 10
+talos_bootstrap_wait_seconds: 30

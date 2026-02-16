@@ -29,6 +29,8 @@ BaseCamp is a comprehensive Infrastructure-as-Code (IaC) project that automates 
 ### GitOps provider
 - **Github account** (repository for fluxcd to reconcile)
 - **SSH Key** added to account for fluxcd operations
+### Localhost
+- **Install packages** (make, ansible)
 
 ## Steps for deployment:
 1. **Create SSH keys**

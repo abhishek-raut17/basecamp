@@ -1,0 +1,27 @@
+- name: Log routing intent
+  ansible.builtin.debug:
+    msg: "Validating IP route from bastion to cluster subnet: {{ cluster_subnet }}"
+
+- name: Check if the route already exists
+  ansible.builtin.command: "ip route show {{ cluster_subnet }}"
+  register: route_check
+  changed_when: false
+  # We ignore errors here because if the route doesn't exist, 
+  # 'ip route show' might return a non-zero exit code depending on OS.
+  failed_when: false
+
+- name: Add route to cluster subnet via {{ cluster_interface }}
+  ansible.builtin.command: "ip route add {{ cluster_subnet }} dev {{ cluster_interface }}"
+  become: true
+  # Only run this if the subnet was NOT found in the 'ip route show' output
+  when: cluster_subnet not in route_check.stdout
+  register: route_added
+
+- name: Show current IP routes
+  ansible.builtin.command: ip route show
+  register: current_routes
+  changed_when: false
+
+- name: Display routing table
+  ansible.builtin.debug:
+    var: current_routes.stdout_lines
