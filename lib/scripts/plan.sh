@@ -23,7 +23,7 @@ PLAN="${PLAN:-plan-v1.tfplan}"
 GENERATED_TFVAR_FILE="${GENERATED_TFVAR_FILE:-${TERRAFORM_VAR_DIR}/terraform.tfvars}"
 TERRAFORM_STATE_FILE="${TERRAFORM_STATE_FILE:-${TERRAFORM_STATE_DIR}/terrafom.tfstate}"
 
-generate_tfvars() {
+generate_vars() {
     local template="${INFRA_DIR}/terraform.tfvars.template"
     local genfile="${GENERATED_TFVAR_FILE}"
 
@@ -47,7 +47,7 @@ plan() {
     log_mark "Generating terraform plan to provision the infrastructure"
 
     # Generating tfvars using environment variables
-    generate_tfvars || return 1
+    generate_vars || return 1
 
     # Init terraform providers
     cd "${INFRA_DIR}"

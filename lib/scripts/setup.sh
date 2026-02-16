@@ -54,6 +54,10 @@ generate_talos_machineconf() {
 
         # update talosconfig with cluster endpoint
         talosctl config endpoint ${CLUSTER_IP} --talosconfig=${TALOS_SECRETS_DIR}/talosconfig || return 1
+
+        # update talosconfig with cluster node
+        talosctl config nodes ${CLUSTER_IP} --talosconfig=${TALOS_SECRETS_DIR}/talosconfig || return 1
+
     else
         log_debug "Machine configs already exists at: ${TALOS_SECRETS_DIR}"
     fi
