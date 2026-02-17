@@ -3,6 +3,6 @@ kind: Kustomization
 resources:
 - operator.yaml
 - operator-extra-access.yaml
-- secrets/redis-user-secret.yaml
+- secrets/redis-user-secret.enc.yaml
 - configmap.yaml
 - cluster.yaml

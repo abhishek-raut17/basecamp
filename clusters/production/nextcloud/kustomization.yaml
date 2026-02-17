@@ -4,6 +4,6 @@ resources:
 - namespace.yaml
 - ref-grant.yaml
 - route-middleware.yaml
-- secrets/nextcloud-admin-secret.yaml
-- secrets/nextcloud-s3-primary-secret.yaml
+- secrets/nextcloud-admin-secret.enc.yaml
+- secrets/nextcloud-s3-primary-secret.enc.yaml
 - release.yaml

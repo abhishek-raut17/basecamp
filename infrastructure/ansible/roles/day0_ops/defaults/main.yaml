@@ -25,4 +25,5 @@ k8s_secrets:
 
   - namespace: flux-system
     name: sops-age
+    key_name: "age.agekey"
     file_path: "/root/.config/secrets/{{ cluster_name }}-age.txt"
