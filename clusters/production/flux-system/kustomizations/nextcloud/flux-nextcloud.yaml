@@ -12,7 +12,7 @@ spec:
     name: flux-system
   dependsOn:
     - name: flux-persistence
-  timeout: 10m
+  timeout: 30m
   decryption:
     provider: sops
     secretRef:
