@@ -1,6 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- sealed-secrets/redis-user-srt.yaml
+- operator.yaml
+- operator-extra-access.yaml
+- secrets/redis-user-secret.yaml
 - configmap.yaml
 - cluster.yaml

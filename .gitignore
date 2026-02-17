@@ -8,10 +8,6 @@
 # Ignore special generated folders
 **/generated/*
 **/machineconfig/*
-**/secrets/*
-**/*secret.yaml
-**/*secrets.yaml
-!**/sealed-secrets/*
 
 ### Git ###
 # Created by git for backups. To disable backups in Git:
