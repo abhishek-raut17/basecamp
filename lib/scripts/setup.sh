@@ -22,10 +22,24 @@ DATA_DIR="${DATA_DIR:-$HOME/.local/share/$PROJECT_NAME}"
 TALOS_DATA_DIR="${TALOS_DATA_DIR:-${DATA_DIR}/talos}"
 CONFIG_DIR="${CONFIG_DIR:-$HOME/.config/$PROJECT_NAME}"
 SECRETS_DIR="${SECRETS_DIR:-${CONFIG_DIR}/secrets}"
+AGE_SECRETS_DIR="${AGE_SECRETS_DIR:-${SECRETS_DIR}/age}"
 TALOS_SECRETS_DIR="${TALOS_SECRETS_DIR:-${SECRETS_DIR}/talos}"
 MANIFEST_LIB="${MANIFEST_LIB:-${ROOT_DIR}/manifests}"
 PATCH_MACHINECONF_LIB="${PATCH_MACHINECONF_LIB:-${MANIFEST_LIB}/patches}"
 CNI_MANIFEST="${CNI_MANIFEST:-${MANIFEST_LIB}/static/cni/custom.cni.yaml}"
+
+generate_age_key() {
+    if [[ ! -d "${AGE_SECRETS_DIR}" ]]; then
+        install_dir "${AGE_SECRETS_DIR}"
+    fi
+
+    if [[ ! -f "${AGE_SECRETS_DIR}/${PROJECT_NAME}-key.txt" ]]; then
+        log_debug "Generating age key at: ${AGE_SECRETS_DIR}"
+        age-keygen -o "${AGE_SECRETS_DIR}/${PROJECT_NAME}-key.txt" || return 1
+        PUBLIC_KEY=$(grep "public key:" "${AGE_SECRETS_DIR}/${PROJECT_NAME}-key.txt" | cut -d' ' -f4)
+        echo "$PUBLIC_KEY" > "${AGE_SECRETS_DIR}/${PROJECT_NAME}-key.pub.txt"
+    fi
+}
 
 generate_talos_secret() {
     if [[ ! -d "$(dirname "${TALOS_SECRETS_DIR}/secrets.yaml")" ]]; then
@@ -112,6 +126,9 @@ setup() {
         log_error "Error: cannot find default CNI manifest at: ${CNI_MANIFEST}"
         return 1
     fi
+
+    # Generate age key for encryption
+    generate_age_key || return 1
 
     # Generate secret.yaml for generating and configuring talos machine configs
     generate_talos_secret || return 1

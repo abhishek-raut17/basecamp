@@ -6,3 +6,4 @@
     - network_config
     - copy_files
     - cluster_bootstrap
+    - day0_ops

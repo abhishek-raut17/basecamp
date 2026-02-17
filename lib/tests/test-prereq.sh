@@ -22,6 +22,8 @@ source "$(dirname "$0")/../scripts/shared/logger.sh"
 PROJECT_NAME="${PROJECT_NAME:-basecamp}"
 VERSION_TALOSCTL=${VERSION_TALOSCTL:-v1.11.2}
 VERSION_TERRAFORM=${VERSION_TERRAFORM:-v1.14.5}
+VERSION_SOPS=${VERSION_SOPS:-v3.11.0}
+VERSION_AGE=${VERSION_AGE:-v1.3.1}
 INSTALL_BIN_DIR="${INSTALL_BIN_DIR:-$HOME/.local/bin}"
 DATA_DIR="${DATA_DIR:-$HOME/.local/share/$PROJECT_NAME}"
 CONFIG_DIR="${CONFIG_DIR:-$HOME/.config/$PROJECT_NAME}"
@@ -87,15 +89,27 @@ test_data_dir_machineconfigs() {
     TESTS_PASSED=$((TESTS_PASSED + 1)) 
 }
 
-# Test 5: Check if CONFIG_DIR/secrets exists
-test_config_dir_secrets() {    
-    if [[ ! -d "${CONFIG_DIR}/secrets" ]]; then
-        test_error "CONFIG_DIR/secrets does not exist: ${CONFIG_DIR}/secrets"
+# Test 5.1: Check if CONFIG_DIR/secrets/talos exists
+test_config_dir_secrets_talos() {    
+    if [[ ! -d "${CONFIG_DIR}/secrets/talos" ]]; then
+        test_error "CONFIG_DIR/secrets/talos does not exist: ${CONFIG_DIR}/secrets"
         TESTS_FAILED=$((TESTS_FAILED + 1)) 
         return 1
     fi
     
-    test_pass "CONFIG_DIR/secrets exists: ${CONFIG_DIR}/secrets"
+    test_pass "CONFIG_DIR/secrets/talos exists: ${CONFIG_DIR}/secrets/talos"
+    TESTS_PASSED=$((TESTS_PASSED + 1)) 
+}
+
+# Test 5.2: Check if CONFIG_DIR/secrets/age exists
+test_config_dir_secrets_age() {    
+    if [[ ! -d "${CONFIG_DIR}/secrets/age" ]]; then
+        test_error "CONFIG_DIR/secrets/age does not exist: ${CONFIG_DIR}/secrets/age"
+        TESTS_FAILED=$((TESTS_FAILED + 1)) 
+        return 1
+    fi
+    
+    test_pass "CONFIG_DIR/secrets/age exists: ${CONFIG_DIR}/secrets/age"
     TESTS_PASSED=$((TESTS_PASSED + 1)) 
 }
 
@@ -167,6 +181,75 @@ test_talosctl_version() {
     fi
 }
 
+# Test 10: Check if sops is installed
+test_sops_installed() {    
+    if ! command -v sops >/dev/null 2>&1; then
+        test_error "sops is not installed or not in PATH"
+        TESTS_FAILED=$((TESTS_FAILED + 1)) 
+        return 1
+    fi
+    
+    local sops_path
+    sops_path="$(which sops)"
+    test_pass "sops is installed at: ${sops_path}"
+    TESTS_PASSED=$((TESTS_PASSED + 1)) 
+}
+
+# Test 11: Check sops version
+test_sops_version() {    
+    if ! command -v sops >/dev/null 2>&1; then
+        test_error "sops is not installed"
+        TESTS_FAILED=$((TESTS_FAILED + 1)) 
+        return 1
+    fi
+    
+    local sops_version
+    sops_version=$(sops -v --check-for-updates 2>/dev/null | awk '{print $2}' )
+    
+    if [[ "${sops_version}" == "${VERSION_SOPS##v}" ]]; then
+        test_pass "sops version matches requirement: ${sops_version}"
+        TESTS_PASSED=$((TESTS_PASSED + 1)) 
+    else
+        test_warn "sops version mismatch. Expected: ${VERSION_SOPS##v}, Got: ${sops_version}"
+        TESTS_WARNED=$((TESTS_WARNED + 1)) 
+    fi
+}
+
+
+# Test 10: Check if age is installed
+test_age_installed() {    
+    if ! command -v age >/dev/null 2>&1; then
+        test_error "age is not installed or not in PATH"
+        TESTS_FAILED=$((TESTS_FAILED + 1)) 
+        return 1
+    fi
+    
+    local age_path
+    age_path="$(which age)"
+    test_pass "age is installed at: ${age_path}"
+    TESTS_PASSED=$((TESTS_PASSED + 1)) 
+}
+
+# Test 11: Check age version
+test_age_version() {    
+    if ! command -v age >/dev/null 2>&1; then
+        test_error "age is not installed"
+        TESTS_FAILED=$((TESTS_FAILED + 1)) 
+        return 1
+    fi
+    
+    local age_version
+    age_version=$(age --version 2>/dev/null | awk '{print $1}' )
+    
+    if [[ "${age_version}" == "${VERSION_AGE}" ]]; then
+        test_pass "age version matches requirement: ${age_version}"
+        TESTS_PASSED=$((TESTS_PASSED + 1)) 
+    else
+        test_warn "age version mismatch. Expected: ${VERSION_AGE}, Got: ${age_version}"
+        TESTS_WARNED=$((TESTS_WARNED + 1)) 
+    fi
+}
+
 # Run all tests
 run_all_tests() {
     test_mark "Starting prerequisite tests..."
@@ -176,11 +259,16 @@ run_all_tests() {
     test_data_dir_state_terraform || return 1
     test_data_dir_var_terraform || return 1
     test_data_dir_machineconfigs || return 1
-    test_config_dir_secrets || return 1
+    test_config_dir_secrets_talos || return 1
+    test_config_dir_secrets_age || return 1
     test_terraform_installed || return 1
     test_terraform_version || return 1
     test_talosctl_installed || return 1
     test_talosctl_version || return 1
+    test_sops_installed || return 1
+    test_sops_version || return 1
+    test_age_installed || return 1
+    test_age_version || return 1
 
     echo ""
     log_info "Test Results: Passed: ${TESTS_PASSED}, Warned: ${TESTS_WARNED}, Failed: ${TESTS_FAILED}"

@@ -124,7 +124,7 @@ plan: setup test-setup
 build: plan test-plan
 	@$(SCRIPTS_DIR)/build.sh
 
-post-build: 
+post-build:
 	@$(SCRIPTS_DIR)/post_build.sh
 
 # ============================================================================

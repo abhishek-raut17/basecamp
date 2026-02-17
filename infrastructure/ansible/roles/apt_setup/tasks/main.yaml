@@ -13,4 +13,5 @@
       - nginx
       - coturn
       - s3cmd
+      - libnginx-mod-stream
     state: present

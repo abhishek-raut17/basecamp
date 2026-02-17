@@ -6,6 +6,7 @@
 #           - $TERRAFORM_VAR_DIR
 #           - $TALOS_SECRETS_DIR
 #           - $TALOS_DATA_DIR
+#           - $AGE_SECRETS_DIR
 #
 # ------------------------------------------------------------------------------
 
@@ -26,12 +27,14 @@ TERRAFORM_VAR_DIR="${TERRAFORM_VAR_DIR:-${DATA_DIR}/var/terraform}"
 TERRAFORM_STATE_DIR="${TERRAFORM_STATE_DIR:-${DATA_DIR}/state/terraform}"
 TALOS_DATA_DIR="${TALOS_DATA_DIR:-${DATA_DIR}/talos}"
 TALOS_SECRETS_DIR="${TALOS_SECRETS_DIR:-${SECRETS_DIR}/talos}"
+AGE_SECRETS_DIR="${AGE_SECRETS_DIR:-${SECRETS_DIR}/age}"
 
 cleanup() {
     log_mark "Cleaning up resources created during make run"
 
     # Delete content from $TERRAFORM_STATE_DIR
     log_debug "${TERRAFORM_STATE_DIR}"
+
     rm -rf ${TERRAFORM_STATE_DIR}/*
 
     # Delete content from $TERRAFORM_VAR_DIR
@@ -42,6 +45,9 @@ cleanup() {
 
     # Delete content from $TALOS_SECRETS_DIR
     rm -rf ${TALOS_SECRETS_DIR}/*
+
+    # Delete content from $AGE_SECRETS_DIR
+    rm -rf ${AGE_SECRETS_DIR}/*
 
     log_success "Cleaned up resources from last make run. Proceed for a fresh run."
 }

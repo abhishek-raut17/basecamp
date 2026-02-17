@@ -20,6 +20,7 @@ DATA_DIR="${DATA_DIR:-$HOME/.local/share/$PROJECT_NAME}"
 CONFIG_DIR="${CONFIG_DIR:-$HOME/.config/$PROJECT_NAME}"
 SECRETS_DIR="${SECRETS_DIR:-${CONFIG_DIR}/secrets}"
 TALOS_SECRETS_DIR="${TALOS_SECRETS_DIR:-${SECRETS_DIR}/talos}"
+AGE_SECRETS_DIR="${AGE_SECRETS_DIR:-${SECRETS_DIR}/age}"
 TERRAFORM_VAR_DIR="${TERRAFORM_VAR_DIR:-${DATA_DIR}/var/terraform}"
 DMS_PROVISION_DIR="${DMZ_PROVISION_DIR:-${INFRA_DIR}/ansible}"
 TERRAFORM_VAR_DIR="${TERRAFORM_VAR_DIR:-${DATA_DIR}/var/terraform}"
@@ -60,6 +61,7 @@ post_build() {
     export CLUSTER_SUBNET="$(jq -r '.network_details.value.vpc.subnets[] | select(.name == "cluster") | .cidr' "${TERRAFORM_VAR_DIR}/${PLAN%%.*}.json")"
     export TALOSCONFIG="${TALOS_SECRETS_DIR}/talosconfig"
     export KUBECONFIG="${TALOS_SECRETS_DIR}/kubeconfig"
+    export AGE_PRIVATE_KEY="${AGE_PRIVATE_KEY:-${AGE_SECRETS_DIR}/${PROJECT_NAME}-key.txt}"
 
     # Apply terraform infrastructure resources
     generate_inventory_vars || return 1
