@@ -1,0 +1,9 @@
+copy_files:
+
+  - name: talosconfig
+    src: "{{ talosconfig_src }}"
+    dest: "/root/.talos/config"
+
+  - name: age-private-key
+    src: "{{ age_private_key }}"
+    dest: "/root/.config/secrets/{{ cluster_name }}-age.txt"

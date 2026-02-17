@@ -25,6 +25,9 @@ installer() {
     zip)
         output_file="${tool}.${file_type}"
         ;;
+    tar)
+        output_file="${tool}.${file_type}.gz"
+        ;;
     *)
         output_file="${tool}"
         ;;
@@ -40,12 +43,21 @@ installer() {
     fi
 
     # If zip type, then unzip
-    if [[ -n "${file_type}" ]] && [[ "${file_type}" == "zip" ]]; then
+    if [[ "${file_type}" == "zip" ]]; then
         unzip "${output_file}"
+
+        chmod +x "${tool}"
+        mv "${tool}" "${bin_dir}/${tool}" || return 1
     fi
 
-    chmod +x "${tool}"
-    mv "${tool}" "${bin_dir}/${tool}" || return 1
+    # If tar type, then tar -xvf
+    if [[ "${file_type}" == "tar" ]]; then
+        tar -xvf "${output_file}"
+
+        chmod +x ${tool}/*
+        find "${tool}" -maxdepth 1 -type f -executable -exec mv {} "${bin_dir}" \; || return 1
+        # mv ${tool}/* "${bin_dir}" || return 1
+    fi
 }
 
 install_bin() {

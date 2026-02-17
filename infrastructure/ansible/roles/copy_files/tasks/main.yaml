@@ -1,0 +1,15 @@
+- name: Ensure directory exists
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0750"
+  loop: "{{ copy_files | map(attribute='dest') | map('dirname') | unique | list }}"
+
+- name: Copy file to dest
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0600"
+  loop: "{{ copy_files }}"

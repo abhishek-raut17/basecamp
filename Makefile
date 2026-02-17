@@ -107,10 +107,10 @@ test: test-prereq test-setup test-plan
 # Core Targets
 # ============================================================================
 
-.PHONY: all prereq setup plan build
+.PHONY: all prereq setup plan build post-build
 
 # Default core target
-all: build
+all: build post-build
 
 prereq: validate
 	@$(SCRIPTS_DIR)/prereq.sh
@@ -124,15 +124,20 @@ plan: setup test-setup
 build: plan test-plan
 	@$(SCRIPTS_DIR)/build.sh
 
+post-build:
+	@$(SCRIPTS_DIR)/post_build.sh
+
 # ============================================================================
 # Maintainance Targets
 # ============================================================================
 
 .PHONY: clean destroy
 
-clean:
+clean: destroy
+	@$(SCRIPTS_DIR)/cleanup.sh
 
 destroy:
+	@$(SCRIPTS_DIR)/destroy.sh
 
 # ============================================================================
 # Info Targets

@@ -1,0 +1,48 @@
+- name: Check Talos cluster health
+  ansible.builtin.command: >
+    talosctl
+    --nodes {{ talos_cluster_endpoint }}
+    --endpoints {{ talos_cluster_endpoint }}
+    --talosconfig {{ talosconfig_path }}
+    --wait-timeout {{ talosctl_timeout }}
+    health
+  register: talos_health_check
+  changed_when: false
+  failed_when: false
+
+- name: Mark cluster bootstrap status
+  ansible.builtin.set_fact:
+    talos_already_bootstrapped: "{{ talos_health_check.rc is defined and talos_health_check.rc == 0 }}"
+
+- name: Log cluster already bootstrapped
+  ansible.builtin.debug:
+    msg: "Cluster already bootstrapped at endpoint {{ talos_cluster_endpoint }}"
+  when: talos_already_bootstrapped
+
+- name: Bootstrap Talos cluster
+  ansible.builtin.command: >
+    talosctl
+    bootstrap
+    --nodes {{ talos_cluster_endpoint }}
+    --endpoints {{ talos_cluster_endpoint }}
+    --talosconfig {{ talosconfig_path }}
+  register: talos_bootstrap
+  when: not talos_already_bootstrapped
+
+- name: Fail if bootstrap failed
+  ansible.builtin.fail:
+    msg: "Failed to bootstrap Talos cluster at endpoint {{ talos_cluster_endpoint }}: {{ talos_bootstrap.stderr }}"
+  when:
+    - not talos_already_bootstrapped
+    - talos_bootstrap.rc is defined
+    - talos_bootstrap.rc != 0
+
+- name: Wait for Talos cluster to stabilize
+  ansible.builtin.pause:
+    seconds: "{{ talos_bootstrap_wait_seconds }}"
+  when: not talos_already_bootstrapped
+
+- name: Bootstrap success message
+  ansible.builtin.debug:
+    msg: "Cluster bootstrapped successfully at endpoint {{ talos_cluster_endpoint }}"
+  when: not talos_already_bootstrapped

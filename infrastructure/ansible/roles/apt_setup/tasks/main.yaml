@@ -1,0 +1,17 @@
+- name: Update APT cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install base packages
+  apt:
+    name:
+      - curl
+      - git
+      - htop
+      - jq
+      - nginx
+      - coturn
+      - s3cmd
+      - libnginx-mod-stream
+    state: present
