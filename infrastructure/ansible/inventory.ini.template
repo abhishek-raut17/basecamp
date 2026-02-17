@@ -10,3 +10,6 @@ cluster_endpoint=$CLUSTER_IP
 linode_credentials=$CLOUD_PROVIDER_PAT
 cloud_provider_region=$CLOUD_PROVIDER_REGION
 age_private_key=$AGE_PRIVATE_KEY
+nginx_conf=$NGINX_CONF
+turnserver_conf=$TURNSERVER_CONF
+kernel_tuning_conf=$KERNEL_TUNING_CONF
