@@ -11,6 +11,12 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: security
+    - name: kube-system
+    - name: olm
   timeout: 30m
   wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+      namespace: flux-system

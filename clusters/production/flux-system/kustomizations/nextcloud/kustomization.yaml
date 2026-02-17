@@ -11,7 +11,11 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: security
-    - name: ingress
+    - name: persistence
   timeout: 30m
   wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+      namespace: flux-system

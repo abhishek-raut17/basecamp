@@ -1,0 +1,32 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cert-manager-webhook-linode
+  namespace: security
+spec:
+  interval: 1h
+  timeout: 10m
+  dependsOn:
+    - name: cert-manager
+      namespace: security
+  chart:
+    spec:
+      chart: ./flux-system/sources/charts/cert-manager-webhook-linode-0.2.0.tgz
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+
+  values:
+    certManager:
+      namespace: security
+    deployment:
+      logLevel: null

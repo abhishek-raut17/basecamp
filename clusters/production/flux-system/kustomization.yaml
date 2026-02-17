@@ -4,13 +4,4 @@ resources:
 - gotk-components.yaml
 - gotk-sync.yaml
 - sources
-- kustomizations/security-cert-manager.yaml
-- kustomizations/security-cluster-issuer.yaml
-- kustomizations/security-secrets-reflector.yaml
-- kustomizations/ingress-traefik.yaml
-- kustomizations/dashboard-headlamp.yaml
-- kustomizations/system-operators-olm.yaml
-- kustomizations/system-metrics-server.yaml
-- kustomizations/persistence-postgres.yaml
-- kustomizations/persistence-redis.yaml
-- kustomizations/nextcloud-nextcloud.yaml
+- kustomizations
