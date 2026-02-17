@@ -13,8 +13,7 @@ spec:
   dependsOn:
     - name: flux-kube-system
     - name: flux-olm
-  timeout: 30m
-  wait: true
+  timeout: 10m
   decryption:
     provider: sops
     secretRef:

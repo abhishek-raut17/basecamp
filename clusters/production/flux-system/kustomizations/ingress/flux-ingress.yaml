@@ -12,5 +12,4 @@ spec:
     name: flux-system
   dependsOn:
     - name: flux-security
-  timeout: 30m
-  wait: true
+  timeout: 10m

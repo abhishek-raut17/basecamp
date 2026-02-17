@@ -13,5 +13,4 @@ spec:
   dependsOn:
     - name: flux-security
     - name: flux-ingress
-  timeout: 30m
-  wait: true
+  timeout: 10m
