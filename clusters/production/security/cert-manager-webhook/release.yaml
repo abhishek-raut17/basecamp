@@ -11,14 +11,13 @@ spec:
       namespace: security
   chart:
     spec:
-      chart: ./flux-system/sources/charts/cert-manager-webhook-linode-0.2.0.tgz
+      chart: ./clusters/production/flux-system/sources/charts/cert-manager-webhook-linode-0.2.0.tgz
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
 
   install:
-    createNamespace: true
     remediation:
       retries: 3
   upgrade:
