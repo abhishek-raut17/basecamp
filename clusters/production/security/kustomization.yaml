@@ -3,6 +3,5 @@ kind: Kustomization
 resources:
 - namespace.yaml
 - cert-manager
-- cluster-issuer
-- secrets-reflector
 - cert-manager-webhook
+- secrets-reflector

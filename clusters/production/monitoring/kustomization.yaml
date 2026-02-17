@@ -3,5 +3,4 @@ kind: Kustomization
 resources:
 - namespace.yaml
 - ref-grant.yaml
-- headlamp/release.yaml
-- headlamp/httproute.yaml
+- headlamp
