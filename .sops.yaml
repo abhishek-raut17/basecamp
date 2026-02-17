@@ -1,7 +1,6 @@
 creation_rules:
-  # Rule 1: Match any .enc.yaml or .enc.yml files anywhere in the repository
-  # This allows secrets in any folder to be encrypted/decrypted uniformly
   - path_regex: .*\.enc\.ya?ml$
     encrypted_regex: ^(data|stringData)$
     key_groups:
-      - age: age1nhfyaxttusg65xyyw52pjeve2enmsjmg8akcmehwf40c37nqnu7qqk690n
+      - age: 
+          - age1nhfyaxttusg65xyyw52pjeve2enmsjmg8akcmehwf40c37nqnu7qqk690n

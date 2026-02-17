@@ -7,3 +7,19 @@ copy_files:
   - name: age-private-key
     src: "{{ age_private_key }}"
     dest: "/root/.config/secrets/{{ cluster_name }}-age.txt"
+
+  - name: nginx-conf
+    src:  "{{ nginx_conf }}"
+    dest: "/etc/nginx/nginx.conf"
+
+  - name: devops_cd
+    src: "{{ devops_cd }}"
+    dest: "/root/.config/secrets/devops_cd"
+
+  - name: turnserver-conf
+    src: "{{ turnserver_conf }}"
+    dest: "/etc/turnserver.conf"
+
+  - name: kernel-tuning
+    src: "{{ kernel_tuning_conf }}"
+    dest: "/etc/sysctl.d/99-tuning.conf"

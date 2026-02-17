@@ -7,3 +7,5 @@
     - copy_files
     - cluster_bootstrap
     - day0_ops
+    - flux_bootstrap
+    # - gateway_bootstrap

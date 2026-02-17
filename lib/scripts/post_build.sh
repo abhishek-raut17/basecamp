@@ -16,6 +16,7 @@ trap 'log_fatal "post_build target failed at line $LINENO"' ERR
 
 PROJECT_NAME="${PROJECT_NAME:-basecamp}"
 INFRA_DIR="${INFRA_DIR:-${ROOT_DIR}/infrastructure}"
+DMZ_CONF_DIR="${DMZ_CONF_DIR:-${LIB_DIR}/configs}"
 DATA_DIR="${DATA_DIR:-$HOME/.local/share/$PROJECT_NAME}"
 CONFIG_DIR="${CONFIG_DIR:-$HOME/.config/$PROJECT_NAME}"
 SECRETS_DIR="${SECRETS_DIR:-${CONFIG_DIR}/secrets}"
@@ -62,6 +63,9 @@ post_build() {
     export TALOSCONFIG="${TALOS_SECRETS_DIR}/talosconfig"
     export KUBECONFIG="${TALOS_SECRETS_DIR}/kubeconfig"
     export AGE_PRIVATE_KEY="${AGE_PRIVATE_KEY:-${AGE_SECRETS_DIR}/${PROJECT_NAME}-key.txt}"
+    export GIT_REPO="${GIT_REPO:-ssh://git@github.com/abhishek-raut17/basecamp.git}"
+    DEVOPS_SSHKEY_PATH="${DEVOPS_SSHKEY_PATH:-$HOME/.ssh/devops_cd}"
+    export DEVOPS_SSHKEY_PATH="${DEVOPS_SSHKEY_PATH%%.pub}"
 
     # Apply terraform infrastructure resources
     generate_inventory_vars || return 1

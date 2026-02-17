@@ -159,7 +159,7 @@
         kubectl create secret generic {{ item.name }}
         --namespace={{ item.namespace }}
         {% if item.file_path is defined %}
-        --from-file={{ item.file_path }}
+        --from-file={{ item.key_name }}={{ item.file_path }}
         {% elif item.literals is defined %}
         {% for literal in item.literals %}
         --from-literal={{ literal }}
