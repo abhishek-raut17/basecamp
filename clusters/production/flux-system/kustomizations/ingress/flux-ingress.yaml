@@ -11,6 +11,6 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: security
+    - name: flux-security
   timeout: 30m
   wait: true

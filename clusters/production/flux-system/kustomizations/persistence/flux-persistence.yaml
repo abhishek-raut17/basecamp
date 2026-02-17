@@ -11,8 +11,8 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: kube-system
-    - name: olm
+    - name: flux-kube-system
+    - name: flux-olm
   timeout: 30m
   wait: true
   decryption:
