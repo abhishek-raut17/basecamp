@@ -8,4 +8,4 @@
     - cluster_bootstrap
     - day0_ops
     - flux_bootstrap
-    - gateway_bootstrap
+    # - gateway_bootstrap
