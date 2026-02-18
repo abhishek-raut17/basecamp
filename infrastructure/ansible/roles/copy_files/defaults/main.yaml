@@ -13,12 +13,8 @@ copy_files:
     dest: "/etc/nginx/nginx.conf"
 
   - name: devops_cd
-    src: "{{ devops_cd }}"
+    src: "{{ fluxcd_sshkey_path }}"
     dest: "/root/.config/secrets/devops_cd"
-
-  - name: turnserver-conf
-    src: "{{ turnserver_conf }}"
-    dest: "/etc/turnserver.conf"
 
   - name: kernel-tuning
     src: "{{ kernel_tuning_conf }}"

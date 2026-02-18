@@ -32,6 +32,7 @@ REQUIRED_ENV_VARS=(
     DATA_DIR
     INSTALL_BIN_DIR
     PLAN
+    COTURN_SERVER_AUTH_ENCODED
 )
 
 validate_env() {

@@ -58,14 +58,18 @@ post_build() {
     cd "${DMS_PROVISION_DIR}"
  
     export DMZ_ACCESS_KEY="${ACCESS_SSHKEY_PATH%%.pub}"
+    export DEVOPS_SSHKEY_PATH="${DEVOPS_SSHKEY_PATH%%.pub}"
     export DMZ_HOST="$(jq -r '.compute_details.value.dmz.ipv4[0]' "${TERRAFORM_VAR_DIR}/${PLAN%%.*}.json")"
     export CLUSTER_SUBNET="$(jq -r '.network_details.value.vpc.subnets[] | select(.name == "cluster") | .cidr' "${TERRAFORM_VAR_DIR}/${PLAN%%.*}.json")"
     export TALOSCONFIG="${TALOS_SECRETS_DIR}/talosconfig"
     export KUBECONFIG="${TALOS_SECRETS_DIR}/kubeconfig"
     export AGE_PRIVATE_KEY="${AGE_PRIVATE_KEY:-${AGE_SECRETS_DIR}/${PROJECT_NAME}-key.txt}"
     export GIT_REPO="${GIT_REPO:-ssh://git@github.com/abhishek-raut17/basecamp.git}"
-    DEVOPS_SSHKEY_PATH="${DEVOPS_SSHKEY_PATH:-$HOME/.ssh/devops_cd}"
-    export DEVOPS_SSHKEY_PATH="${DEVOPS_SSHKEY_PATH%%.pub}"
+    export NGINX_CONF="${NGINX_CONF:-${DMZ_CONF_DIR}/nginx.conf}"
+    export KERNEL_TUNING_CONF="${KERNEL_TUNING_CONF:-${DMZ_CONF_DIR}/99-tuning.conf}"
+    export TURNSERVER_CONF="${TURNSERVER_CONF:-${DMZ_CONF_DIR}/turnserver.conf.template}"
+    export COTURN_SERVER_AUTH_ENCODED="${COTURN_SERVER_AUTH_ENCODED}"
+    export TURN_DOMAIN="${TURN_DOMAIN:-turn.sigdep.cloud}"
 
     # Apply terraform infrastructure resources
     generate_inventory_vars || return 1
