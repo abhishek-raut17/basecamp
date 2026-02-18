@@ -221,12 +221,6 @@ spec:
       extraVolumes:
         - name: nextcloud-redis-session-ini
           emptyDir: {}
-        - name: nginx-cache
-          emptyDir: {}
-        - name: nginx-run
-          emptyDir: {}
-        - name: nginx-tmp
-          emptyDir: {}
 
       extraVolumeMounts:
         - name: nextcloud-redis-session-ini
@@ -260,17 +254,10 @@ spec:
         runAsGroup: 33
         runAsNonRoot: true
         allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
+        readOnlyRootFilesystem: false
         capabilities:
           drop:
             - ALL
-      extraVolumeMounts:
-        - name: nginx-cache
-          mountPath: /var/cache/nginx
-        - name: nginx-run
-          mountPath: /var/run
-        - name: nginx-tmp
-          mountPath: /tmp
       resources:
         requests:
           cpu: 50m
