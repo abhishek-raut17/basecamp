@@ -16,7 +16,6 @@ spec:
         namespace: flux-system
       interval: 1h
 
-# Nextcloud pfm-php image (which uses nginx instead of default apache)
   values:
     replicaCount: 1
 
@@ -209,33 +208,22 @@ spec:
       extraInitContainers:
         - name: init-redis-session-ini
           image: busybox
+          securityContext:
+            runAsUser: 33
+            runAsGroup: 33
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
           command: ['touch', '/usr/local/etc/php/conf.d/redis-session.ini']
           volumeMounts:
             - name: nextcloud-redis-session-ini
               mountPath: "/usr/local/etc/php/conf.d"
-        - name: init-nginx-cache
-          image: busybox
-          securityContext:
-            runAsUser: 82
-            runAsNonRoot: true
-          command:
-            - sh
-            - -c
-            - |
-              mkdir -p \
-                /var/cache/nginx/client_temp \
-                /var/cache/nginx/proxy_temp \
-                /var/cache/nginx/fastcgi_temp \
-                /var/cache/nginx/uwsgi_temp \
-                /var/cache/nginx/scgi_temp
-          volumeMounts:
-            - name: nginx-cache
-              mountPath: /var/cache/nginx
 
       extraVolumes:
         - name: nextcloud-redis-session-ini
           emptyDir: {}
         - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
           emptyDir: {}
 
       extraVolumeMounts:
@@ -247,6 +235,7 @@ spec:
         runAsUser: 33
         runAsGroup: 33
         runAsNonRoot: true
+        allowPrivilegeEscalation: false
         readOnlyRootFilesystem: false
 
       podSecurityContext:
@@ -254,7 +243,8 @@ spec:
         runAsGroup: 33
         fsGroup: 33
         runAsNonRoot: true
-        readOnlyRootFilesystem: false
+        seccompProfile:
+          type: RuntimeDefault
 
     nginx:
       enabled: true
@@ -263,13 +253,16 @@ spec:
       config:
         default: true
       securityContext:
-        runAsUser: 82
+        runAsUser: 33
         runAsGroup: 33
         runAsNonRoot: true
-        readOnlyRootFilesystem: false
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
       extraVolumeMounts:
         - name: nginx-cache
           mountPath: /var/cache/nginx
+        - name: nginx-run
+          mountPath: /var/run
       resources:
         requests:
           cpu: 50m
@@ -287,7 +280,7 @@ spec:
           runAsUser: 33
           runAsGroup: 33
           runAsNonRoot: true
-          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
         resources:
           requests:
             cpu: 50m
