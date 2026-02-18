@@ -206,6 +206,23 @@ spec:
             'preview_imaginary_url' => 'http://nextcloud-imaginary:9000',
           );
 
+        oidc.config.php: |-
+          <?php
+          $CONFIG = array (
+            'oidc_login_provider_url' => getenv('AUTH0_DOMAIN'),
+            'oidc_login_client_id' => getenv('AUTH0_CLIENT_ID'),
+            'oidc_login_client_secret' => getenv('AUTH0_CLIENT_SECRET'),
+            'oidc_login_login_button_text' => 'Login to SigDep with Auth0',
+            'oidc_login_auto_redirect' => false,
+            'oidc_login_end_session_redirect' => true,
+            'oidc_login_scope' => 'openid profile email',
+            'oidc_login_attributes' => array (
+              'id' => 'sub',
+              'name' => 'name',
+              'mail' => 'email',
+            ),
+          );
+
       extraInitContainers:
         - name: init-redis-session-ini
           image: busybox
@@ -227,6 +244,23 @@ spec:
         - name: nextcloud-redis-session-ini
           mountPath: "/usr/local/etc/php/conf.d/redis-session.ini"
           subPath: redis-session.ini
+
+      extraEnv:
+        - name: AUTH0_DOMAIN
+          valueFrom:
+            secretKeyRef:
+              name: nextcloud-auth0-secret
+              key: domain
+        - name: AUTH0_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: nextcloud-auth0-secret
+              key: clientId
+        - name: AUTH0_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: nextcloud-auth0-secret
+              key: clientSecret
 
       securityContext:
         runAsUser: 33
