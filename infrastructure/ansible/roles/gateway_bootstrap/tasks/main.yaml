@@ -15,7 +15,7 @@
 - name: Ensure git is installed
   ansible.builtin.apt:
     name: git
-    update_cache: yes
+    update_cache: no
     state: present
   when: not acme_sh_binary.stat.exists
 
@@ -48,7 +48,7 @@
   ansible.builtin.lineinfile:
     path: "{{ acme_dir }}/account.conf"
     regexp: '^SAVED_LINODE_V4_API_KEY='
-    line: "SAVED_LINODE_V4_API_KEY='{{ cloud_provider_pat }}'"
+    line: "SAVED_LINODE_V4_API_KEY='{{ linode_credentials }}'"
     create: yes
     mode: '0600'
 
@@ -64,14 +64,14 @@
     --server letsencrypt
     --log {{ acme_log }}
   environment:
-    LINODE_V4_API_KEY: "{{ cloud_provider_pat }}"
+    LINODE_V4_API_KEY: "{{ linode_credentials }}"
   register: acme_issue
   failed_when: acme_issue.rc != 0 and acme_issue.rc != 2
   changed_when: acme_issue.rc == 0
 
 - name: Process turnserver conf file with envsubst
   ansible.builtin.shell: |
-    envsubst < "{{ turnserver_conf }}" > "/etc/turnserver.conf"
+    envsubst < "/etc/turnserver.conf.template" > "/etc/turnserver.conf"
   environment:
     COTURN_SERVER_AUTH_ENCODED: "{{ turn_server_auth }}"
     TURN_DOMAIN: "{{ turn_domain }}"

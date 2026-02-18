@@ -31,8 +31,6 @@ cleanup() {
     log_mark "Cleaning up resources created during make run"
 
     # Delete content from $TERRAFORM_STATE_DIR
-    log_debug "${TERRAFORM_STATE_DIR}"
-
     rm -rf ${TERRAFORM_STATE_DIR}/*
 
     # Delete content from $TERRAFORM_VAR_DIR

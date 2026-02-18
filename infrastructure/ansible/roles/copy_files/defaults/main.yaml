@@ -19,3 +19,7 @@ copy_files:
   - name: kernel-tuning
     src: "{{ kernel_tuning_conf }}"
     dest: "/etc/sysctl.d/99-tuning.conf"
+
+  - name: turnserver-conf
+    src: "{{ turnserver_conf_tmpl }}"
+    dest: "/etc/turnserver.conf.template"

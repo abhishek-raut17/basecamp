@@ -28,6 +28,11 @@ destroy() {
     cd "${INFRA_DIR}"
 
     # CRITICAL: Destroy infrastructure
+    if [[ ! -f "${GENERATED_TFVAR_FILE}" ]]; then
+        log_warn "No terraform.tfvars file found at: ${TERRAFORM_VAR_DIR}. Skipping make target: destroy"
+        return 0
+    fi
+
     terraform apply -destroy -auto-approve -var-file=${GENERATED_TFVAR_FILE}
 
     log_success "Used terraform plan ${PLAN} to destroy the infrastructure sucessfully"

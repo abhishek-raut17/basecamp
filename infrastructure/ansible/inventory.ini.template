@@ -19,7 +19,7 @@ flux_cluster_path=clusters/production
 
 nginx_conf=$NGINX_CONF
 kernel_tuning_conf=$KERNEL_TUNING_CONF
-turnserver_conf=$TURNSERVER_CONF
+turnserver_conf_tmpl=$TURNSERVER_CONF
 
 turn_server_auth=$COTURN_SERVER_AUTH_ENCODED
 turn_domain=$TURN_DOMAIN

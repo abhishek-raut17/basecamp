@@ -24,8 +24,8 @@ min-port=49152
 max-port=65535
 
 # --- TLS Certificates ---
-cert=/etc/coturn/certs/$TURN_DOMAIN_ecc/fullchain.cer
-pkey=/etc/coturn/certs/$TURN_DOMAIN_ecc/$TURN_DOMAIN.key
+cert=/etc/coturn/certs/${TURN_DOMAIN}_ecc/fullchain.cer
+pkey=/etc/coturn/certs/${TURN_DOMAIN}_ecc/$TURN_DOMAIN.key
 
 # Modern Security
 no-tlsv1
