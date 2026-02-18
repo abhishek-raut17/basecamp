@@ -6,6 +6,7 @@ cluster_name=$PROJECT_NAME
 cluster_subnet=$CLUSTER_SUBNET
 cluster_interface=eth1
 cluster_endpoint=$CLUSTER_IP
+dmz_public_endpoint=$DMZ_HOST
 talosconfig_src=$TALOSCONFIG
 
 linode_credentials=$CLOUD_PROVIDER_PAT

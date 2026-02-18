@@ -73,6 +73,7 @@
   ansible.builtin.shell: |
     envsubst < "/etc/turnserver.conf.template" > "/etc/turnserver.conf"
   environment:
+    EXTERNAL_IP: "{{ dmz_public_endpoint }}"
     COTURN_SERVER_AUTH_ENCODED: "{{ turn_server_auth }}"
     TURN_DOMAIN: "{{ turn_domain }}"
 

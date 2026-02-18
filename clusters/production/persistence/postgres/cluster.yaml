@@ -79,7 +79,7 @@ spec:
   backup:
     barmanObjectStore:
       serverName: postgres-cluster
-      destinationPath: "s3://sigdep-pg-primary-backup/primary"
+      destinationPath: "s3://sigdep-pg-primary-backup/primary-bkp"
       endpointURL: "https://us-ord-1.linodeobjects.com"
       s3Credentials:
         accessKeyId:
