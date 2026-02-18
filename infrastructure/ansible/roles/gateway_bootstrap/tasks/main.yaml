@@ -1,0 +1,122 @@
+- name: Process turnserver conf file with envsubst
+  ansible.builtin.shell: |
+    envsubst < "{{ turnserver_conf }}" > "/etc/turnserver.conf"
+  environment:
+    COTURN_SERVER_AUTH_ENCODED: "{{ turn_server_auth }}"
+    TURN_DOMAIN: "{{ turn_domain }}"
+
+- name: Check if /etc/default/coturn exists
+  ansible.builtin.stat:
+    path: /etc/default/coturn
+  register: coturn_defaults
+
+- name: Enable coturn in /etc/default/coturn
+  ansible.builtin.lineinfile:
+    path: /etc/default/coturn
+    regexp: '^#TURNSERVER_ENABLED=1'
+    line: 'TURNSERVER_ENABLED=1'
+    backrefs: yes
+  when: coturn_defaults.stat.exists
+
+- name: Stop nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: stopped
+
+- name: Stop coturn
+  ansible.builtin.systemd:
+    name: coturn
+    state: stopped
+
+- name: Daemon reload
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Enable and start nginx
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: yes
+    state: started
+
+- name: Enable and start coturn
+  ansible.builtin.systemd:
+    name: coturn
+    enabled: yes
+    state: started
+
+- name: Set acme.sh variables
+  ansible.builtin.set_fact:
+    domain: "{{ turn_domain }}"
+    acme_email: "{{ acme_email | default('engineering.abhishek17@gmail.com') }}"
+    acme_dir: "{{ acme_dir | default('/root/.acme.sh') }}"
+    cert_home: "{{ cert_home | default('/etc/coturn/certs') }}"
+    dns_provider: "{{ dns_provider | default('dns_linode_v4') }}"
+    acme_log: "/var/log/acme-sh/acme-sh.log"
+
+- name: Check if acme.sh is already installed
+  ansible.builtin.stat:
+    path: "{{ acme_dir }}/acme.sh"
+  register: acme_sh_binary
+
+- name: Ensure git is installed
+  ansible.builtin.apt:
+    name: git
+    update_cache: yes
+    state: present
+  when: not acme_sh_binary.stat.exists
+
+- name: Ensure acme.sh log directory exists
+  ansible.builtin.file:
+    path: /var/log/acme-sh
+    state: directory
+    mode: '0755'
+  when: not acme_sh_binary.stat.exists
+
+- name: Clone acme.sh repository
+  ansible.builtin.git:
+    repo: https://github.com/acmesh-official/acme.sh.git
+    dest: /tmp/acme.sh
+    force: yes
+  when: not acme_sh_binary.stat.exists
+
+- name: Install acme.sh
+  ansible.builtin.command: >
+    ./acme.sh --install
+    --home {{ acme_dir }}
+    --accountemail {{ acme_email }}
+    --log {{ acme_log }}
+    --cron
+  args:
+    chdir: /tmp/acme.sh
+  when: not acme_sh_binary.stat.exists
+
+- name: Check if account.conf exists
+  ansible.builtin.stat:
+    path: "{{ acme_dir }}/account.conf"
+  register: acme_account_conf
+
+- name: Ensure LINODE_V4_API_KEY is set in account.conf
+  ansible.builtin.lineinfile:
+    path: "{{ acme_dir }}/account.conf"
+    regexp: '^SAVED_LINODE_V4_API_KEY='
+    line: "SAVED_LINODE_V4_API_KEY='{{ cloud_provider_pat }}'"
+    create: yes
+    mode: '0600'
+
+- name: Issue certificate with acme.sh
+  ansible.builtin.command: >
+    {{ acme_dir }}/acme.sh
+    --issue
+    --home {{ acme_dir }}
+    --domain {{ domain }}
+    --dns {{ dns_provider }}
+    --cert-home {{ cert_home }}
+    --reloadcmd "systemctl restart coturn"
+    --server letsencrypt
+    --log {{ acme_log }}
+  environment:
+    LINODE_V4_API_KEY: "{{ cloud_provider_pat }}"
+  register: acme_issue
+  failed_when: acme_issue.rc != 0 and acme_issue.rc != 2
+  changed_when: acme_issue.rc == 0
+  # rc=2 means cert already exists and is not due for renewal — not a failure

@@ -14,7 +14,7 @@
 
     - name: Ensure Flux SSH key exists
       ansible.builtin.openssh_keypair:
-        path: "{{ fluxcd_sshkey_path }}"
+        path: "/root/.config/secrets/devops_cd"
         type: ed25519
         comment: "fluxcd-devops"
         mode: "0600"
@@ -25,7 +25,7 @@
         flux bootstrap git
         --url={{ git_repo }}
         --branch={{ flux_branch }}
-        --private-key-file={{ fluxcd_sshkey_path }}
+        --private-key-file="/root/.config/secrets/devops_cd"
         --author-name="Flux Bot"
         --author-email="flux-bot@sigdep.cloud"
         --path={{ flux_cluster_path }}

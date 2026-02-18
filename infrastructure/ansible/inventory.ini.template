@@ -12,7 +12,14 @@ linode_credentials=$CLOUD_PROVIDER_PAT
 cloud_provider_region=$CLOUD_PROVIDER_REGION
 age_private_key=$AGE_PRIVATE_KEY
 
-fluxcd_sshkey_path=$DEVOPS_SSHKEY
+fluxcd_sshkey_path=$DEVOPS_SSHKEY_PATH
 git_repo=$GIT_REPO
 flux_branch=development
 flux_cluster_path=clusters/production
+
+nginx_conf=$NGINX_CONF
+kernel_tuning_conf=$KERNEL_TUNING_CONF
+turnserver_conf=$TURNSERVER_CONF
+
+turn_server_auth=$COTURN_SERVER_AUTH_ENCODED
+turn_domain=$TURN_DOMAIN
