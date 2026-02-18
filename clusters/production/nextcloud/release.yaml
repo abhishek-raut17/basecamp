@@ -249,6 +249,7 @@ spec:
     nginx:
       enabled: true
       image:
+        repository: nginxinc/nginx-unprivileged
         tag: alpine
       config:
         default: true
@@ -258,6 +259,9 @@ spec:
         runAsNonRoot: true
         allowPrivilegeEscalation: false
         readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
       extraVolumeMounts:
         - name: nginx-cache
           mountPath: /var/cache/nginx
