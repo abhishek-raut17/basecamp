@@ -162,7 +162,6 @@ spec:
         tuning.config.php: |-
           <?php
           $CONFIG = array (
-            'config_is_read_only' => true,
             'check_data_directory_permissions' => false,
             'overwriteprotocol' => 'https',
             'objectstore_multipart_threshold' => 52428800,
