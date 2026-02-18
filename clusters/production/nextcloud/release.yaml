@@ -210,14 +210,32 @@ spec:
         - name: init-redis-session-ini
           image: busybox
           command: ['touch', '/usr/local/etc/php/conf.d/redis-session.ini']
-          # securityContext:
-          #   runAsUser: 0
           volumeMounts:
             - name: nextcloud-redis-session-ini
               mountPath: "/usr/local/etc/php/conf.d"
+        - name: init-nginx-cache
+          image: busybox
+          securityContext:
+            runAsUser: 0
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p \
+                /var/cache/nginx/client_temp \
+                /var/cache/nginx/proxy_temp \
+                /var/cache/nginx/fastcgi_temp \
+                /var/cache/nginx/uwsgi_temp \
+                /var/cache/nginx/scgi_temp
+              chown -R 82:33 /var/cache/nginx
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
 
       extraVolumes:
         - name: nextcloud-redis-session-ini
+          emptyDir: {}
+        - name: nginx-cache
           emptyDir: {}
 
       extraVolumeMounts:
@@ -234,6 +252,7 @@ spec:
       podSecurityContext:
         runAsUser: 33
         runAsGroup: 33
+        fsGroup: 33
         runAsNonRoot: true
         readOnlyRootFilesystem: false
 
@@ -244,10 +263,13 @@ spec:
       config:
         default: true
       securityContext:
-        runAsUser: 33
+        runAsUser: 82
         runAsGroup: 33
         runAsNonRoot: true
         readOnlyRootFilesystem: false
+      extraVolumeMounts:
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
       resources:
         requests:
           cpu: 50m
