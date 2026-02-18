@@ -247,7 +247,7 @@ spec:
         runAsUser: 33
         runAsGroup: 33
         runAsNonRoot: true
-        readOnlyRootFilesystem: true
+        readOnlyRootFilesystem: false
       resources:
         requests:
           cpu: 50m
@@ -265,7 +265,7 @@ spec:
           runAsUser: 33
           runAsGroup: 33
           runAsNonRoot: true
-          readOnlyRootFilesystem: true
+          readOnlyRootFilesystem: false
         resources:
           requests:
             cpu: 50m
