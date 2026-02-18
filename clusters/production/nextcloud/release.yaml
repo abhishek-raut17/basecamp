@@ -216,7 +216,8 @@ spec:
         - name: init-nginx-cache
           image: busybox
           securityContext:
-            runAsUser: 0
+            runAsUser: 82
+            runAsNonRoot: true
           command:
             - sh
             - -c
