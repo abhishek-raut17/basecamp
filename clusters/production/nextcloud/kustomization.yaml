@@ -6,4 +6,5 @@ resources:
 - route-middleware.yaml
 - secrets/nextcloud-admin-secret.enc.yaml
 - secrets/nextcloud-s3-primary-secret.enc.yaml
+- secrets/nextcloud-auth0-secret.enc.yaml
 - release.yaml
