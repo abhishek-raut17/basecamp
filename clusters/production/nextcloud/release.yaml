@@ -162,6 +162,7 @@ spec:
         tuning.config.php: |-
           <?php
           $CONFIG = array (
+            'check_data_directory_permissions' => false,
             'overwriteprotocol' => 'https',
             'objectstore_multipart_threshold' => 52428800,
             'preview_max_x' => 1024,
@@ -238,6 +239,7 @@ spec:
         runAsUser: 33
         runAsGroup: 33
         fsGroup: 33
+        fsGroupChangePolicy: "Always"
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
