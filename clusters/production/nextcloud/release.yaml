@@ -206,6 +206,25 @@ spec:
             'preview_imaginary_url' => 'http://nextcloud-imaginary:9000',
           );
 
+      extraInitContainers:
+        - name: init-redis-session-ini
+          image: busybox
+          command: ['touch', '/usr/local/etc/php/conf.d/redis-session.ini']
+          # securityContext:
+          #   runAsUser: 0
+          volumeMounts:
+            - name: nextcloud-redis-session-ini
+              mountPath: "/usr/local/etc/php/conf.d"
+
+      extraVolumes:
+        - name: nextcloud-redis-session-ini
+          emptyDir: {}
+
+      extraVolumeMounts:
+        - name: nextcloud-redis-session-ini
+          mountPath: "/usr/local/etc/php/conf.d/redis-session.ini"
+          subPath: redis-session.ini
+
       securityContext:
         runAsUser: 33
         runAsGroup: 33
