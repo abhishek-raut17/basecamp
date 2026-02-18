@@ -1,0 +1,82 @@
+- name: Ensure temp directory exists
+  file:
+    path: "{{ cli_tmp_dir }}"
+    state: directory
+    mode: "0755"
+
+# ---------------- VERSION CHECK ----------------
+- name: Check installed binary versions
+  ansible.builtin.command: "{{ cli_install_dir }}/{{ item.name }} {{ item.verify_cmd | default('--version') }}"
+  register: installed_version
+  changed_when: false
+  failed_when: false
+  loop: "{{ cli_tools }}"
+
+- name: Determine which binaries need updating
+  ansible.builtin.set_fact:
+    binaries_to_update: "{{ binaries_to_update | default([]) + [item.item] }}"
+  when: |
+    installed_version.results[ansible_loop.index0].rc != 0 or
+    item.item.version not in (installed_version.results[ansible_loop.index0].stdout | default(''))
+  loop: "{{ installed_version.results }}"
+  loop_control:
+    extended: yes
+
+- name: Log binaries to update
+  ansible.builtin.debug:
+    msg: "Need to update: {{ binaries_to_update | map(attribute='name') | list }}"
+  when: binaries_to_update is defined
+
+# ---------------- DOWNLOAD ----------------
+- name: Download binaries
+  get_url:
+    url: "{{ item.url | replace('{version}', item.version) }}"
+    dest: "{{ cli_tmp_dir }}/{{ item.name }}{{ '.tar.gz' if item.archive|default(false) else '' }}"
+    mode: "0644"
+    timeout: 60
+    validate_certs: true
+  register: download_result
+  retries: 5
+  delay: 5
+  until: download_result is succeeded
+  loop: "{{ binaries_to_update | default([]) }}"
+
+# ---------------- EXTRACT ----------------
+- name: Extract archives when needed
+  unarchive:
+    src: "{{ cli_tmp_dir }}/{{ item.name }}.tar.gz"
+    dest: "{{ cli_tmp_dir }}"
+    remote_src: true
+  when: item.archive | default(false)
+  loop: "{{ binaries_to_update | default([]) }}"
+
+# ---------------- INSTALL / UPDATE ----------------
+- name: Install or update binaries to pinned versions
+  copy:
+    src: >-
+      {{
+        cli_tmp_dir + '/' +
+        (
+          (item.extract_path | default(item.name))
+          if (item.archive | default(false))
+          else item.name
+        )
+      }}
+    dest: "{{ cli_install_dir }}/{{ item.name }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  loop: "{{ binaries_to_update | default([]) }}"
+
+- name: Log installed binaries
+  ansible.builtin.debug:
+    msg: "Successfully installed/updated: {{ binaries_to_update | map(attribute='name') | list }}"
+  when: binaries_to_update is defined
+
+# ---------------- CLEANUP ----------------
+- name: Cleanup temp directory
+  file:
+    path: "{{ cli_tmp_dir }}"
+    state: absent

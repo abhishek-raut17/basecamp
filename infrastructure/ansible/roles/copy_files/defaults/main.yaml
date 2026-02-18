@@ -1,0 +1,25 @@
+copy_files:
+
+  - name: talosconfig
+    src: "{{ talosconfig_src }}"
+    dest: "/root/.talos/config"
+
+  - name: age-private-key
+    src: "{{ age_private_key }}"
+    dest: "/root/.config/secrets/{{ cluster_name }}-age.txt"
+
+  - name: nginx-conf
+    src:  "{{ nginx_conf }}"
+    dest: "/etc/nginx/nginx.conf"
+
+  - name: devops_cd
+    src: "{{ fluxcd_sshkey_path }}"
+    dest: "/root/.config/secrets/devops_cd"
+
+  - name: kernel-tuning
+    src: "{{ kernel_tuning_conf }}"
+    dest: "/etc/sysctl.d/99-tuning.conf"
+
+  - name: turnserver-conf
+    src: "{{ turnserver_conf_tmpl }}"
+    dest: "/etc/turnserver.conf.template"

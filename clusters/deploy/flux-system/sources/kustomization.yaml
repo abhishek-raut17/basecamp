@@ -1,9 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-- cert-manager-repo.yaml
-- traefik-repo.yaml
-- headlamp-repo.yaml
-- reflector-repo.yaml
-- metrics-server-repo.yaml
-- nextcloud-repo.yaml

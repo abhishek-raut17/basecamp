@@ -1,0 +1,201 @@
+- name: Check Talos cluster health
+  ansible.builtin.command: >
+    talosctl
+    --nodes {{ talos_cluster_endpoint }}
+    --endpoints {{ talos_cluster_endpoint }}
+    --talosconfig {{ talosconfig_path }}
+    --wait-timeout {{ talosctl_timeout }}
+    health
+  register: talos_health_check
+  changed_when: false
+  failed_when: false
+
+- name: Cluster health message
+  ansible.builtin.debug:
+    msg: "Talos cluster is healthy at endpoint {{ talos_cluster_endpoint }}"
+  when:
+    - talos_health_check.rc is defined
+    - talos_health_check.rc == 0
+
+- name: Ensure kube directory exists
+  ansible.builtin.file:
+    path: "{{ kubeconfig_output_dir }}"
+    state: directory
+    mode: "0750"
+
+- name: Generate kubeconfig
+  ansible.builtin.command: >
+    talosctl
+    --nodes {{ talos_cluster_endpoint }}
+    --endpoints {{ talos_cluster_endpoint }}
+    --talosconfig {{ talosconfig_path }}
+    kubeconfig
+    {{ kubeconfig_output_dir }}/config
+  register: kubeconfig_result
+  changed_when: false
+  failed_when: false
+  when:
+    - talos_health_check.rc is defined
+    - talos_health_check.rc == 0
+
+- name: Log kubeconfig generation
+  ansible.builtin.debug:
+    msg: "Successfully generated kubeconfig at {{ kubeconfig_output_dir }}"
+  when:
+    - talos_health_check.rc is defined
+    - talos_health_check.rc == 0
+    - kubeconfig_result.rc is defined
+    - kubeconfig_result.rc == 0
+
+- name: Check kube cluster health
+  ansible.builtin.command: >
+    kubectl
+    get
+    nodes
+    -o wide
+    --kubeconfig {{ kubeconfig_output_dir }}/config
+  register: kube_health_check
+  changed_when: false
+  failed_when: false
+  when:
+    - talos_health_check.rc is defined
+    - talos_health_check.rc == 0
+    - kubeconfig_result.rc is defined
+    - kubeconfig_result.rc == 0
+
+- name: Display kubectl nodes output
+  ansible.builtin.debug:
+    msg: |
+      Kubernetes cluster nodes:
+      {{ kube_health_check.stdout }}
+  when:
+    - kube_health_check.rc is defined
+    - kube_health_check.rc == 0
+
+- name: Label worker nodes
+  ansible.builtin.shell: >
+    kubectl
+    label
+    nodes
+    --selector='node-role.kubernetes.io/control-plane!='
+    node-role.kubernetes.io/worker=
+    --kubeconfig {{ kubeconfig_output_dir }}/config
+    --overwrite
+  register: kube_label_nodes
+  changed_when: "'labeled' in kube_label_nodes.stdout or 'not labeled' in kube_label_nodes.stdout"
+  failed_when: false
+  when:
+    - kube_health_check.rc is defined
+    - kube_health_check.rc == 0
+
+- name: Create Kubernetes namespaces
+  block:
+    - name: Check if namespace exists
+      ansible.builtin.shell: >
+        kubectl
+        get
+        namespace
+        {{ item }}
+        --kubeconfig {{ kubeconfig_output_dir }}/config
+      register: namespace_check
+      changed_when: false
+      failed_when: false
+      loop: "{{ k8s_namespaces | default([]) }}"
+
+    - name: Create namespaces that don't exist
+      ansible.builtin.shell: >
+        kubectl
+        create
+        namespace
+        {{ item.item }}
+        --dry-run=client
+        -o yaml
+        | kubectl
+        apply
+        -f -
+        --kubeconfig {{ kubeconfig_output_dir }}/config
+      register: namespace_create
+      changed_when: "'created' in namespace_create.stdout"
+      failed_when: false
+      when:
+        - item.rc != 0
+      loop: "{{ namespace_check.results }}"
+
+    - name: Log namespace creation results
+      ansible.builtin.debug:
+        msg: |
+          {% if item.rc == 0 %}
+          Namespace already exists: {{ item.item }}
+          {% elif item.rc != 0 and item.changed %}
+          Namespace created: {{ item.item }}
+          {% endif %}
+      when:
+        - item.skipped is not defined or not item.skipped
+      loop: "{{ namespace_create.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+  when:
+    - kube_health_check.rc is defined
+    - kube_health_check.rc == 0
+
+- name: Create Kubernetes secrets
+  block:
+    - name: Validate secrets configuration
+      ansible.builtin.assert:
+        that:
+          - k8s_secrets is defined
+          - k8s_secrets | length > 0
+          - item.namespace is defined
+          - item.name is defined
+          - item.file_path is defined or item.literals is defined
+          - (item.file_path is defined) or (item.literals is defined and item.literals | length > 0)
+        fail_msg: "Secret must have namespace, name, and at least one literal key=value pair"
+      loop: "{{ k8s_secrets | default([]) }}"
+      loop_control:
+        label: "{{ item.namespace }}/{{ item.name }}"
+
+    - name: Create secrets
+      ansible.builtin.shell: >
+        kubectl create secret generic {{ item.name }}
+        --namespace={{ item.namespace }}
+        {% if item.file_path is defined %}
+        --from-file={{ item.key_name }}={{ item.file_path }}
+        {% elif item.literals is defined %}
+        {% for literal in item.literals %}
+        --from-literal={{ literal }}
+        {% endfor %}
+        {% endif %}
+        --dry-run=client -o yaml | kubectl apply -f -
+        --kubeconfig {{ kubeconfig_output_dir }}/config
+      register: secret_create
+      changed_when: "'created' in secret_create.stdout or 'configured' in secret_create.stdout"
+      failed_when: secret_create.rc != 0 and 'already exists' not in secret_create.stderr
+      loop: "{{ k8s_secrets | default([]) }}"
+      loop_control:
+        label: "{{ item.namespace }}/{{ item.name }}"
+
+    - name: Log secret creation results
+      ansible.builtin.debug:
+        msg: |
+          {% if 'created' in item.stdout %}
+          Secret created: {{ item.item.namespace }}/{{ item.item.name }}
+          {% elif 'configured' in item.stdout %}
+          Secret configured: {{ item.item.namespace }}/{{ item.item.name }}
+          {% elif item.rc == 0 %}
+          Secret already exists: {{ item.item.namespace }}/{{ item.item.name }}
+          {% endif %}
+      when: item.rc == 0
+      loop: "{{ secret_create.results }}"
+      loop_control:
+        label: "{{ item.item.namespace }}/{{ item.item.name }}"
+
+    - name: Log secret creation errors
+      ansible.builtin.debug:
+        msg: "Failed to create secret {{ item.item.namespace }}/{{ item.item.name }}: {{ item.stderr }}"
+      when: item.rc != 0 and 'already exists' not in item.stderr
+      loop: "{{ secret_create.results }}"
+      loop_control:
+        label: "{{ item.item.namespace }}/{{ item.item.name }}"
+  when:
+    - kube_health_check.rc is defined
+    - kube_health_check.rc == 0

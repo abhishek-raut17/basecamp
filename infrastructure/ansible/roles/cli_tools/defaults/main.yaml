@@ -1,0 +1,32 @@
+cli_install_dir: /usr/local/bin
+cli_tmp_dir: /tmp/cli-tools
+
+cli_tools:
+
+  - name: kubectl
+    version: "v1.34.1"
+    url: "https://dl.k8s.io/release/{version}/bin/linux/amd64/kubectl"
+    checksum: ""
+    verify_cmd: "version --client"
+
+  - name: talosctl
+    version: "v1.11.2"
+    url: "https://github.com/siderolabs/talos/releases/download/{version}/talosctl-linux-amd64"
+    checksum: ""
+    verify_cmd: "version --client"
+
+  - name: flux
+    version: "2.7.5"
+    url: "https://github.com/fluxcd/flux2/releases/download/v{version}/flux_{version}_linux_amd64.tar.gz"
+    extract_path: "flux"
+    archive: true
+    checksum: ""
+    verify_cmd: "version --client"
+
+  - name: helm
+    version: "v4.1.1"
+    archive: true
+    url: "https://get.helm.sh/helm-{version}-linux-amd64.tar.gz"
+    extract_path: "linux-amd64/helm"
+    checksum: ""
+    verify_cmd: "version --short"

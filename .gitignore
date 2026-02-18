@@ -8,10 +8,6 @@
 # Ignore special generated folders
 **/generated/*
 **/machineconfig/*
-**/secrets/*
-**/*secret.yaml
-**/*secrets.yaml
-!**/sealed-secrets/*
 
 ### Git ###
 # Created by git for backups. To disable backups in Git:
@@ -124,6 +120,7 @@ web_modules/
 
 # Output of 'npm pack'
 *.tgz
+!**/charts/*.tgz
 
 # Yarn Integrity file
 .yarn-integrity
@@ -280,3 +277,6 @@ gradle-app.setting
 *.hprof
 
 # End of https://www.toptal.com/developers/gitignore/api/terraform,visualstudiocode,java,node,git,gradle
+
+# Ansible
+inventory.ini

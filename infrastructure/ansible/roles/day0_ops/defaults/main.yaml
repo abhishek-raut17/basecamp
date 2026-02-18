@@ -1,0 +1,29 @@
+talos_cluster_endpoint: "{{ cluster_endpoint }}"
+talosconfig_path: "/root/.talos/config"
+talosctl_timeout: "5m"
+kubeconfig_output_dir: "/root/.kube"
+
+k8s_namespaces:
+  - security
+  - persistence
+  - ingress
+  - monitoring
+  - observability
+  - flux-system
+
+k8s_secrets:
+  - namespace: security
+    name: linode-credentials
+    literals:
+      - "token={{ linode_credentials }}"
+
+  - namespace: kube-system
+    name: ccm-token
+    literals:
+      - "token={{ linode_credentials }}"
+      - "region={{ cloud_provider_region }}"
+
+  - namespace: flux-system
+    name: sops-age
+    key_name: "age.agekey"
+    file_path: "/root/.config/secrets/{{ cluster_name }}-age.txt"

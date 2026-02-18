@@ -1,0 +1,8 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: linode-csi
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://linode.github.io/linode-blockstorage-csi-driver/

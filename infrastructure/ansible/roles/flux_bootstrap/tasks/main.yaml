@@ -1,0 +1,36 @@
+- name: Bootstrap FluxCD
+  block:
+
+    - name: Check if flux CLI exists
+      ansible.builtin.command: which flux
+      register: flux_cli_check
+      failed_when: false
+      changed_when: false
+
+    - name: Skip bootstrap if flux CLI not found
+      ansible.builtin.debug:
+        msg: "flux CLI not found, skipping FluxCD bootstrap"
+      when: flux_cli_check.rc != 0
+
+    - name: Ensure Flux SSH key exists
+      ansible.builtin.openssh_keypair:
+        path: "/root/.config/secrets/devops_cd"
+        type: ed25519
+        comment: "fluxcd-devops"
+        mode: "0600"
+      when: flux_cli_check.rc == 0
+
+    - name: Bootstrap FluxCD against Git repo
+      ansible.builtin.command: >
+        flux bootstrap git
+        --url={{ git_repo }}
+        --branch={{ flux_branch }}
+        --private-key-file="/root/.config/secrets/devops_cd"
+        --author-name="Flux Bot"
+        --author-email="flux-bot@sigdep.cloud"
+        --path={{ flux_cluster_path }}
+        --silent
+      when: flux_cli_check.rc == 0
+      register: flux_bootstrap
+      changed_when: "'installed components' in flux_bootstrap.stdout
+                     or 'reconciliation finished' in flux_bootstrap.stdout"

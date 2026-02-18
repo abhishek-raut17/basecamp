@@ -1,0 +1,26 @@
+[dmz_hosts]
+dmz1 ansible_host=$DMZ_HOST ansible_user=root ansible_ssh_private_key_file=$DMZ_ACCESS_KEY
+
+[dmz_hosts:vars]
+cluster_name=$PROJECT_NAME
+cluster_subnet=$CLUSTER_SUBNET
+cluster_interface=eth1
+cluster_endpoint=$CLUSTER_IP
+dmz_public_endpoint=$DMZ_HOST
+talosconfig_src=$TALOSCONFIG
+
+linode_credentials=$CLOUD_PROVIDER_PAT
+cloud_provider_region=$CLOUD_PROVIDER_REGION
+age_private_key=$AGE_PRIVATE_KEY
+
+fluxcd_sshkey_path=$DEVOPS_SSHKEY_PATH
+git_repo=$GIT_REPO
+flux_branch=development
+flux_cluster_path=clusters/production
+
+nginx_conf=$NGINX_CONF
+kernel_tuning_conf=$KERNEL_TUNING_CONF
+turnserver_conf_tmpl=$TURNSERVER_CONF
+
+turn_server_auth=$COTURN_SERVER_AUTH_ENCODED
+turn_domain=$TURN_DOMAIN

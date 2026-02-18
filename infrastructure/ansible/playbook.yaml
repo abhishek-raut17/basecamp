@@ -1,0 +1,11 @@
+- name: Bootstrap DMZ host and cluster gateway
+  hosts: dmz_hosts
+  roles:
+    - apt_setup
+    - cli_tools
+    - network_config
+    - copy_files
+    - cluster_bootstrap
+    - day0_ops
+    - flux_bootstrap
+    - gateway_bootstrap

@@ -21,12 +21,12 @@ output "network_details" {
       id = linode_vpc.vpc.id
       subnets = [
         {
-          name = "cluster_subnet"
+          name = "cluster"
           id   = linode_vpc_subnet.cluster_subnet.id
           cidr = linode_vpc_subnet.cluster_subnet.ipv4
         },
         {
-          name = "dmz_subnet"
+          name = "dmz"
           id   = linode_vpc_subnet.dmz_subnet.id
           cidr = linode_vpc_subnet.dmz_subnet.ipv4
         }
